@@ -14,57 +14,50 @@ import networkx as nx
 
 from .node import Node, FakeNode
 
-def running_node(node):
-    print("W RUNNING NODE")
+def cos(i,j):
+    print("W COS", i,j)
     #node.test()
 
 
 pool_g = mp.Pool(processes=4)
 def run_fun(mod):
-    pdb.set_trace()
+    #pdb.set_trace()
     #self.pool.apply_async(self.run_interface_el_mp, (3,))
     results = [pool_g.apply_async(mod.print) for inp in [0,1]]
-    pdb.set_trace()
+    #pdb.set_trace()
     pass
 
 
-# one worker per node?
+# one worker per node? NO
 class MpWorker(object):
-    def __init__(self, node, done, queue, nr_proc=4): #should be none
+    def __init__(self, nr_proc=4): #should be none
         self.nr_proc = nr_proc
         self.pool = mp.Pool(processes=self.nr_proc)
-        self.node = node
-        self.done = done
-        self.queue = queue
 
-        self.input_list = []
-        for (i, ind) in enumerate(itertools.product(*self.node.node_states._all_elements)):
-            self.input_list.append((i, ind))
+    def my_print(self, i, j):
 
-    def my_print(self):
-        print("HELLO")
+        print("HELLO", i, j)
 
     #dj: i think i have to do it per element
-    def run(self):
-        #pdb.set_trace()
-        results = [self.pool.apply_async(self.node.run_interface_el, (inp[0], inp[1]), callback=self.done.append) for inp in self.input_list]
-        self.node._result = [res.get() for res in results]
+    #def run(self):
+    #    print("W RUN, INP_L", self.input_list)
+    #    results = [self.pool.apply_async(self.node.run_interface_el, (inp[0], inp[1]), callback=self.done.append) for inp in self.input_list]
+    #    self.node._result = [res.get() for res in results]
 
 
-    def run_el(self, inp):
+    def run_el(self, interface, inp):
         #pdb.set_trace()
         #if inp[0] == 0:
         #    time.sleep(5)
         print("W WORKER: RUN EL", inp)
-        self.pool.apply_async(self.node.run_interface_el, (inp[0], inp[1]), callback=self.done.append)
-
+        self.pool.apply_async(interface, (inp[0], inp[1]))
 
 
 #dj: i think i don't need it
-    def run_interface_el_mp(self, input_mp):
-        """ running run_interface_el"""
+#    def run_interface_el_mp(self, input_mp):
+#        """ running run_interface_el"""
         #pdb.set_trace()
-        print("IN RUN INTER, os.getpid = ", os.getpid())
+#        print("IN RUN INTER, os.getpid = ", os.getpid())
 #        state_dict, output = self.node.run_interface_el(ind)
 #        return (i, state_dict, output)
 

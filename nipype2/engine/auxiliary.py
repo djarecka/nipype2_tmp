@@ -34,9 +34,9 @@ def mapper2rpn(mapper):
 def mapping_axis(state_inputs, mapper_rpn):
     axis_for_input = {}
     stack = []
-    current_axis = None
+    current_axis = None #dj not sure if emty list will work
     current_shape = None
-    
+
     for el in mapper_rpn:
         if el == ".":
             right = stack.pop()
@@ -96,15 +96,20 @@ def mapping_axis(state_inputs, mapper_rpn):
         else:
             stack.append(el)
 
-    if len(stack) > 1:
+    if len(stack) == 0:
+        pass
+    elif len(stack) > 1:
         raise Exception("exception from mapping_axis")
     elif stack[0] != "OUT":
-        #pdb.set_trace()
         current_axis = [i for i in range(state_inputs[stack[0]].ndim)]
         axis_for_input[stack[0]] = current_axis
 
     #print("axis", axis_for_input)
-    return axis_for_input, max(current_axis) + 1
+    if current_axis:
+        ndim = max(current_axis) + 1
+    else:
+        ndim = 0
+    return axis_for_input, ndim
 
 
 
@@ -141,7 +146,7 @@ class Function_Interface(object):
                 except KeyError:
                     raise Exception("no {} in the input dictionary".format(key_inp))
         fun_output = self.function(**input)
-        print("FUN OUT", fun_output)
+        print("FUN OUT, input", fun_output, input)
         if type(fun_output) is tuple:
             if len(self._output_nm) == len(fun_output):
                 for i, out in enumerate(fun_output):

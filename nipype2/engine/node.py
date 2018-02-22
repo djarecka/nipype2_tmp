@@ -84,6 +84,10 @@ class Node(object):
         self._input_order_map = {}
         self._history = {} #tracking which node should give input
         self.sufficient = True
+        self._result = {}
+        self._out_nm = []
+        self.needed_outputs = []
+        self._send_outputs = []
 
 
 
@@ -92,10 +96,11 @@ class Node(object):
         if self._result:
             return self._result
         else:
-            cwd = self.output_dir()
+            raise Exception("can't find results...")
+            #cwd = self.output_dir()
             # dj TODO: no self._load_resultfile
-            result, _, _ = self._load_resultfile(cwd)
-            return result
+            #result, _, _ = self._load_resultfile(cwd)
+            #return result
 
     @property
     def inputs(self):
@@ -149,23 +154,35 @@ class Node(object):
     # dj TODO: tmpPL czy to powinno byc  w node, czy tez przeniesieone?
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
-        print("W RUN INTERFACE EL", self.name, i)
+        print("W RUN INTERFACE EL", self.name, i, ind)
+        print(ind)
         #if self.name == "node_2" or self.name=="single_node_1":
         #    time.sleep(10)
         #if i == 0:
         #    time.sleep(3)
         #print("W RUN INTERFACE EL, after waiting",self.name, i)
+        #pdb.set_trace()
         inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
         self._interface.run(inputs_dict)
         output = self._interface.output
         # TOTHINK: I added savings, should I both return and save?
         #TODO: specify better the name of directory
-        with open(os.path.join(self.nodedir, "output.txt"), "w") as fout:
-            fout.write(i, state_dict, output)
+        print("W RUN INTERFACE EL, before fout",state_dict, output)
+
+        self._out_nm = [] #TODO: should be somewhere else
+
+        for key_out in list(output.keys()):
+            self._out_nm.append(key_out)
+            os.makedirs(os.path.join(self.nodedir, key_out), exist_ok=True)
+            with open(os.path.join(self.nodedir, key_out, "output.txt"), "w") as fout:
+                fout.write(str(output[key_out]))
+        print("W RUN INTERFACE EL, _out_nm", self._out_nm)
         return i, state_dict, output
 
 
+    def node_cos(self, i, j):
+        print("W NODE COS", i, j)
 
     def preparing_node(self):
         # adding directory (should have workflowdir already)
@@ -173,7 +190,7 @@ class Node(object):
         os.makedirs(self.nodedir, exist_ok=True)
 
         #pdb.set_trace()
-        #self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
+        self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
         #self._ready = []
         #for (i, ind) in enumerate(itertools.product(*self.node_states._all_elements)):
         #    dict_inp = {}
@@ -185,7 +202,7 @@ class Node(object):
         #        else:
         #            raise Exception("don't know how to get all inputs, do something!")
         #    self._ready.append([ind, dict_inp])
-        pdb.set_trace()
+        #pdb.set_trace()
         pass
 
 

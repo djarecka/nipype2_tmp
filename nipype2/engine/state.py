@@ -14,9 +14,10 @@ class State(object):
             # changing mapper (as in rpn), so I can read from left to right
             # e.g. if mapper=('d', ['e', 'r']), _mapper_rpn=['d', 'e', 'r', '*', '.']
             self._mapper_rpn = aux.mapper2rpn(self._mapper)
+            self._input_names_mapper = [i for i in self._mapper_rpn if i not in ["*", "."]]
         else:
-            self._mapper_rpn = None
-        self._input_names_mapper = [i for i in self._mapper_rpn if i not in ["*", "."]]
+            self._mapper_rpn = []
+            self._input_names_mapper = []
         # not all input field have to be use in the mapper, can be an extra scalar
         self._input_names = list(self.state_inputs.keys())
         # will use alphabetic order
@@ -75,6 +76,10 @@ class State(object):
 
 
     def state_values(self, ind):
+        #print("IND", ind)
+        #pdb.set_trace()
+
+
         from collections import OrderedDict
         if len(ind) > self._ndim:
             raise IndexError("too many indices")
@@ -100,5 +105,6 @@ class State(object):
         for input in set(self._input_names) - set(self._input_names_mapper):
             state_dict[input] = self.state_inputs[input]
 
+        print("In STATE_VALUES", state_dict.items())
         # returning a named tuple
         return OrderedDict(sorted(state_dict.items(), key=lambda t: t[0]))
