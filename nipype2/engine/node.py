@@ -111,10 +111,6 @@ class Node(object):
 
     @inputs.setter
     def inputs(self, inputs):
-        # Basic idea, though I haven't looked up the actual way to do this:
-        # self._interface.inputs.clear()
-        # self._interface.inputs.update(inputs)
-        #print("IN SETTER")
         self._inputs = inputs
         self._state_inputs = self._inputs.copy()
 
@@ -155,13 +151,6 @@ class Node(object):
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
         print("W RUN INTERFACE EL", self.name, i, ind)
-        print(ind)
-        #if self.name == "node_2" or self.name=="single_node_1":
-        #    time.sleep(10)
-        #if i == 0:
-        #    time.sleep(3)
-        #print("W RUN INTERFACE EL, after waiting",self.name, i)
-        #pdb.set_trace()
         inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
         self._interface.run(inputs_dict)
@@ -169,20 +158,14 @@ class Node(object):
         # TOTHINK: I added savings, should I both return and save?
         #TODO: specify better the name of directory
         print("W RUN INTERFACE EL, before fout",state_dict, output)
-
         self._out_nm = [] #TODO: should be somewhere else
-
         for key_out in list(output.keys()):
             self._out_nm.append(key_out)
             os.makedirs(os.path.join(self.nodedir, key_out), exist_ok=True)
             with open(os.path.join(self.nodedir, key_out, "output.txt"), "w") as fout:
                 fout.write(str(output[key_out]))
-        print("W RUN INTERFACE EL, _out_nm", self._out_nm)
         return i, state_dict, output
 
-
-    def node_cos(self, i, j):
-        print("W NODE COS", i, j)
 
     def preparing_node(self):
         # adding directory (should have workflowdir already)
@@ -205,18 +188,3 @@ class Node(object):
         #pdb.set_trace()
         pass
 
-
-
-    # def run(self):
-    #     # contains value of inputs
-    #     #IMP to to psuje, a konkretniej przypisywanie tego dos self.x
-    #     pdb.set_trace()
-    #     self.node_states_inputs = state.State(state_inputs=self._inputs, mapper=self._mapper,
-    #                                         inp_ord_map=self._input_order_map)
-    #     # contains value of state inputs (values provided in original input)
-    #     self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
-    #     #pdb.set_trace()
-    #     # dj TODO tmpPL, to chyba powinnam poprosic o odpowiednia klase? czy to tylko w WF?
-    #     # dj TODO tmpPL: to jakos sie powinnien komunikowac z ta middle layer? patrzec co mu potrzebne?
-    #     #self._result = getattr(self, "run_interface_"+self.plugin)()
-    #     pass

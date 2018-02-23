@@ -10,39 +10,12 @@ import re, os, pdb, time
 import multiprocessing as mp
 #import multiprocess as mp
 import itertools
-import networkx as nx
-
-from .node import Node, FakeNode
-
-def cos(i,j):
-    print("W COS", i,j)
-    #node.test()
-
-
-pool_g = mp.Pool(processes=4)
-def run_fun(mod):
-    #pdb.set_trace()
-    #self.pool.apply_async(self.run_interface_el_mp, (3,))
-    results = [pool_g.apply_async(mod.print) for inp in [0,1]]
-    #pdb.set_trace()
-    pass
-
 
 # one worker per node? NO
 class MpWorker(object):
     def __init__(self, nr_proc=4): #should be none
         self.nr_proc = nr_proc
         self.pool = mp.Pool(processes=self.nr_proc)
-
-    def my_print(self, i, j):
-
-        print("HELLO", i, j)
-
-    #dj: i think i have to do it per element
-    #def run(self):
-    #    print("W RUN, INP_L", self.input_list)
-    #    results = [self.pool.apply_async(self.node.run_interface_el, (inp[0], inp[1]), callback=self.done.append) for inp in self.input_list]
-    #    self.node._result = [res.get() for res in results]
 
 
     def run_el(self, interface, inp):
@@ -52,14 +25,6 @@ class MpWorker(object):
         print("W WORKER: RUN EL", inp)
         self.pool.apply_async(interface, (inp[0], inp[1]))
 
-
-#dj: i think i don't need it
-#    def run_interface_el_mp(self, input_mp):
-#        """ running run_interface_el"""
-        #pdb.set_trace()
-#        print("IN RUN INTER, os.getpid = ", os.getpid())
-#        state_dict, output = self.node.run_interface_el(ind)
-#        return (i, state_dict, output)
 
 
 #dj TODO: to pozostalosci tego co zabralam z klasy Node

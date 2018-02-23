@@ -105,6 +105,6 @@ class State(object):
         for input in set(self._input_names) - set(self._input_names_mapper):
             state_dict[input] = self.state_inputs[input]
 
-        print("In STATE_VALUES", state_dict.items())
+        #print("In STATE_VALUES", state_dict.items())
         # returning a named tuple
         return OrderedDict(sorted(state_dict.items(), key=lambda t: t[0]))

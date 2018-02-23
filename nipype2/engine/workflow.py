@@ -96,43 +96,7 @@ class Workflow(object):
 
 
     def run(self, monitor_consumption=True):  # dj TODO: monitor consumption not used
-        # self.graph_sorted = list(nx.topological_sort(self.graph))
-        # logger.debug('the sorted graph is: {}'.format(self.graph_sorted))
-        # for nn in self.graph_sorted:
-        #     try:
-        #         for inp, (out_node, out_var) in self.connected_var[nn].items():
-        #             #pdb.set_trace()
-        #             #dj TODO: not sure if this will work well and efficient...
-        #             #nn._input_order_map.update({inp: [i[0] for i in out_node.result]})
-        #             #nn.inputs.update({inp: np.array([ii[2][out_var] for ii in out_node.result])})
-        #             nn._state_inputs.update(out_node._state_inputs)
-        #             #pdb.set_trace()
-        #             #if there is no mapper provided, i'm assuming that mapper is taken from the previous node
-        #             if not nn._state_mapper or nn._state_mapper == out_node._state_mapper:
-        #                 #pdb.set_trace()
-        #                 nn._state_mapper = out_node._state_mapper
-        #                 nn._mapper = inp
-        #             # when the mapper from previous node is used in the current node (it has to be the same syntax)
-        #             elif out_node._state_mapper in nn._state_mapper:  # _state_mapper or _mapper?? TODO
-        #                 #dj: if I use the syntax with state_inp name than I don't have to change the mapper...
-        #                 pass
-        #             #TODO: implement inner mapper
-        #             elif inp in nn._state_mapper:
-        #                 raise Exception("{} can be in the mapper only together with {}, i.e. {})".format(inp, out[1],
-        #                                                                                                  [out[1], inp]))
-        #
-        #     except(KeyError):
-        #         # tmp: we don't care about nn that are not in self.connected_var
-        #         pass
-        #     #pdb.set_trace()
-        #     #IMP to to powoduje ze sie rozwala
-        #     #tmp: nn.node_states = state.State(state_inputs=nn._state_inputs, mapper=nn._state_mapper)
-        #     nn.run() #DJ temp: to nie run teraz robi tylko ustala jakies inputy
-        #     pdb.set_trace()
-
-        #pdb.set_trace()
         self._preparing()
-
         pdb.set_trace()
         sub = Submiter(self.graph_sorted, plugin="mp") #plugin has to be in the init
         sub.run_workflow()
