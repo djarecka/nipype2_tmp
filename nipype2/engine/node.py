@@ -85,9 +85,12 @@ class Node(object):
         self._history = {} #tracking which node should give input
         self.sufficient = True
         self._result = {}
-        self._out_nm = []
         self.needed_outputs = []
         self._send_outputs = []
+        if self._reducer is None:
+            self._out_nm = self._interface._output_nm
+        else:
+            raise Exception("have to finish...")
 
 
 
@@ -158,9 +161,7 @@ class Node(object):
         # TOTHINK: I added savings, should I both return and save?
         #TODO: specify better the name of directory
         print("W RUN INTERFACE EL, before fout",state_dict, output)
-        self._out_nm = [] #TODO: should be somewhere else
         for key_out in list(output.keys()):
-            self._out_nm.append(key_out)
             os.makedirs(os.path.join(self.nodedir, key_out), exist_ok=True)
             with open(os.path.join(self.nodedir, key_out, "output.txt"), "w") as fout:
                 fout.write(str(output[key_out]))

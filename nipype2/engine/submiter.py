@@ -52,13 +52,12 @@ class Submiter(object):
             time.sleep(3)
 
         time.sleep(5)
-        # final reading of the results
+
+        # final reading of the results, this will be removed in the final version (TODO)
         for (i_n, node) in enumerate(self.graph):
-            #print("OUT NM", node._out_nm) #TODO i don't know why I dont see it
-            for key_out in ["out"]: #TODO: node._out_nm:
+            for key_out in node._out_nm:
                 with open(os.path.join(node.nodedir, key_out, "output.txt")) as fout:
                     node._result[key_out] = eval(fout.readline())
-            #print("AFTER RESULT", node, node._result)
 
 
     def submit_work(self, node, i_n):
