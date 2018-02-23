@@ -17,7 +17,6 @@ class Submiter(object):
         self.graph = graph
         self.plugin = plugin
         self.node_line = []
-        #self.done_wf = []
         if self.plugin == "mp":
             self.worker = MpWorker()
 

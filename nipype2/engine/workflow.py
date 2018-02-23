@@ -21,7 +21,7 @@ from .submiter import Submiter
 logger = logging.getLogger('workflow')
 
 class Workflow(object):
-    def __init__(self, workingdir, nodes=None, **kwargs):
+    def __init__(self, workingdir, plugin="mp", nodes=None, **kwargs):
         self.graph = nx.DiGraph()
         if nodes:
             self._nodes = nodes
@@ -33,6 +33,7 @@ class Workflow(object):
             self.connected_var[nn] = {}
         logger.debug('Initialize workflow')
         self.workingdir = workingdir
+        self.plugin = plugin
 
 
     @property
@@ -56,7 +57,7 @@ class Workflow(object):
         logger.debug('connecting {} and {}'.format(from_node, to_node))
 
 
-    def _preparing(self):  # dj: this should be pefore running, so no results available
+    def _preparing(self):
         self.graph_sorted = list(nx.topological_sort(self.graph))
         logger.debug('the sorted graph is: {}'.format(self.graph_sorted))
         #pdb.set_trace()
@@ -90,15 +91,13 @@ class Workflow(object):
                 # tmp: we don't care about nn that are not in self.connected_var
                 pass
 
-            nn.preparing_node() #DJ temp: to nie run teraz robi tylko ustala jakies inputy
-            #pdb.set_trace()
-            pass
+            nn.preparing_node()
 
 
-    def run(self, monitor_consumption=True):  # dj TODO: monitor consumption not used
+
+    def run(self):
         self._preparing()
         pdb.set_trace()
-        sub = Submiter(self.graph_sorted, plugin="mp") #plugin has to be in the init
+        sub = Submiter(self.graph_sorted, plugin=self.plugin)
         sub.run_workflow()
-        #pdb.set_trace()
-        #pass
+
