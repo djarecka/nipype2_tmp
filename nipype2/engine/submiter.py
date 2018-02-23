@@ -60,14 +60,18 @@ class Submiter(object):
         for (i_n, node) in enumerate(self.graph):
             for key_out in node._out_nm:
                 node._result[key_out] = []
-                files = [name for name in glob.glob("{}/*/{}.txt".format(node.nodedir, key_out))]
-                for file in files:
-                    st_el = file.split(os.sep)[-2].split("_")
-                    st_dict =  collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
-                                                            for el in st_el])
-                    with open(file) as fout:
-                        node._result[key_out].append((st_dict,fout.readline()))
-
+                if node._inputs:
+                    files = [name for name in glob.glob("{}/*/{}.txt".format(node.nodedir, key_out))]
+                    for file in files:
+                        st_el = file.split(os.sep)[-2].split("_")
+                        st_dict =  collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                                for el in st_el])
+                        with open(file) as fout:
+                            node._result[key_out].append((st_dict, eval(fout.readline())))
+                else:
+                    files = [name for name in glob.glob("{}/{}.txt".format(node.nodedir, key_out))]
+                    with open(files[0]) as fout:
+                        node._result[key_out].append(({}, eval(fout.readline())))
 
 
     def submit_work(self, node, i_n):

@@ -20,8 +20,8 @@ def funB(b):
 def funC(c):
     return 10 * c
 
-def funD(d):
-    return 10 * d
+def funD(d1, d2):
+    return d1 + d2
 
 def funE(e1, e2):
     return e1 * e2
@@ -30,8 +30,8 @@ def funF():
     return 0
 
 
-def test_workflow_basic_1():#inputs_dict, fun, expected_output, plugin):
-    """testing workflow witha a single node provided in the __init__"""
+def test_workflow_basic_1():
+    """graph: A, B"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
               name="nA", plugin="mp")
@@ -41,11 +41,16 @@ def test_workflow_basic_1():#inputs_dict, fun, expected_output, plugin):
 
     wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="test1")
     wf.run()
-    pdb.set_trace()
-    pass
 
-def test_workflow_basic_2():#inputs_dict, fun, expected_output, plugin):
-    """testing workflow witha a single node provided in the __init__"""
+    assert nA.result["out"][0][0] == {"a":5}
+    assert nA.result["out"][0][1] == 25
+
+    assert nB.result["out"][0][0] == {"b": 15}
+    assert nB.result["out"][0][1] == 17
+
+
+def test_workflow_basic_2():
+    """graph: A -> C, B"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
               name="nA", plugin="mp")
@@ -58,12 +63,19 @@ def test_workflow_basic_2():#inputs_dict, fun, expected_output, plugin):
     wf = Workflow(nodes=[nA, nB, nC], name="workflow_2", workingdir="test2")
     wf.connect(nA, "out", nC, "c")
     wf.run()
-    pdb.set_trace()
-    pass
+
+    assert nA.result["out"][0][0] == {"a":5}
+    assert nA.result["out"][0][1] == 25
+
+    assert nB.result["out"][0][0] == {"b": 15}
+    assert nB.result["out"][0][1] == 17
+
+    assert nC.result["out"][0][0] == {"a":5}
+    assert nC.result["out"][0][1] == 250
 
 
-def test_workflow_basic_3():#inputs_dict, fun, expected_output, plugin):
-    """testing workflow witha a single node provided in the __init__"""
+def test_workflow_basic_3():
+    """graph: A -> C, A -> D,  B -> D, C -> E, D -> E, F"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
               name="nA", plugin="mp")
@@ -83,9 +95,27 @@ def test_workflow_basic_3():#inputs_dict, fun, expected_output, plugin):
 
     wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_3", workingdir="test3")
     wf.connect(nA, "out", nC, "c")
-    wf.connect(nB, "out", nD, "d")
+    wf.connect(nA, "out", nD, "d1")
+    wf.connect(nB, "out", nD, "d2")
     wf.connect(nC, "out", nE, "e1")
     wf.connect(nD, "out", nE, "e2")
     wf.run()
+
     pdb.set_trace()
-    pass
+    assert nA.result["out"][0][0] == {"a": 5}
+    assert nA.result["out"][0][1] == 25
+
+    assert nB.result["out"][0][0] == {"b": 15}
+    assert nB.result["out"][0][1] == 17
+
+    assert nC.result["out"][0][0] == {"a": 5}
+    assert nC.result["out"][0][1] == 250
+
+    assert nD.result["out"][0][0] == {"a": 5, "b": 15}
+    assert nD.result["out"][0][1] == 42
+
+    assert nE.result["out"][0][0] == {"a": 5, "b": 15}
+    assert nE.result["out"][0][1] == 10500
+
+    assert nF.result["out"][0][0] == {}
+    assert nF.result["out"][0][1] == 0
