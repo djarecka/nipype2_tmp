@@ -12,6 +12,10 @@ import queue
 from .workers import MpWorker
 from .state import State
 
+from .. import config, logging
+logger = logging.getLogger('workflow')
+
+
 class Submiter(object):
     def __init__(self, graph, plugin):
         self.graph = graph
@@ -19,6 +23,7 @@ class Submiter(object):
         self.node_line = []
         if self.plugin == "mp":
             self.worker = MpWorker()
+        logger.debug('Initialize Submitter, graph: {}'.format(graph))
 
 
 
@@ -34,7 +39,7 @@ class Submiter(object):
         time.sleep(5)
 
         while self.node_line:
-            print("NODE LINE", self.node_line)
+            logger.debug("Submitter, node_line: {}".format(self.node_line))
             for i, (node, i_n) in enumerate(self.node_line):
                 for (out_node, out_var, inp) in node.needed_outputs:
                     # TODO this works only because there is no mapper!
@@ -50,10 +55,7 @@ class Submiter(object):
                     self.node_line.remove((node, i_n))
                     node.sufficient = True
                     self.submit_work(node, i_n)
-            print("NODE LINE before sleep", self.node_line)
             time.sleep(3)
-
-        time.sleep(5)
 
         # final reading of the results, this will be removed in the final version (TODO)
         # combining all results from specifics nodes together (for all state elements)
@@ -68,6 +70,7 @@ class Submiter(object):
                                                                 for el in st_el])
                         with open(file) as fout:
                             node._result[key_out].append((st_dict, eval(fout.readline())))
+                # for nodes without input
                 else:
                     files = [name for name in glob.glob("{}/{}.txt".format(node.nodedir, key_out))]
                     with open(files[0]) as fout:
@@ -75,15 +78,11 @@ class Submiter(object):
 
 
     def submit_work(self, node, i_n):
-        print("SUBMIT WORKER, needed out", node, node.needed_outputs)
-        if node.sufficient: #doesnt have to wait for anyone (probably should be generalized)
-            print("SELF SUFF", node)
-            node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
-                                                    inp_ord_map=node._input_order_map)
+        logger.debug("SUBMIT WORKER, node: {}".format(node))
+        node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
+                                        inp_ord_map=node._input_order_map)
 
-
-
-            for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
-                self.worker.run_el(node.run_interface_el, (i, ind))
+        for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
+            self.worker.run_el(node.run_interface_el, (i, ind))
 
 

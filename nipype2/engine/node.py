@@ -11,14 +11,15 @@ from future import standard_library
 standard_library.install_aliases()
 
 from copy import deepcopy
-import re, os, time
+import re, os, time, pdb
 import numpy as np
 import networkx as nx
 import itertools
 
 from . import state
 
-import pdb
+from .. import config, logging
+logger = logging.getLogger('workflow')
 
 
 class FakeNode(object):
@@ -87,6 +88,7 @@ class Node(object):
             self._out_nm = self._interface._output_nm
         else:
             raise Exception("have to finish...")
+        logger.debug('Initialize Node {}'.format(name))
 
 
 
@@ -145,12 +147,11 @@ class Node(object):
 
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
-        print("W RUN INTERFACE EL", self.name, i, ind)
+        logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
         inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
         self._interface.run(inputs_dict)
         output = self._interface.output
-        print("W RUN INTERFACE EL, before fout",state_dict, output)
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
         os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
         for key_out in list(output.keys()):

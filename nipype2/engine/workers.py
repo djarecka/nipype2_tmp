@@ -11,15 +11,17 @@ import multiprocessing as mp
 #import multiprocess as mp
 import itertools
 
+from .. import config, logging
+logger = logging.getLogger('workflow')
 
 class MpWorker(object):
     def __init__(self, nr_proc=4): #should be none
         self.nr_proc = nr_proc
         self.pool = mp.Pool(processes=self.nr_proc)
+        logger.debug('Initialize Worker')
 
 
     def run_el(self, interface, inp):
-        print("W WORKER: RUN EL", inp)
         self.pool.apply_async(interface, (inp[0], inp[1]))
 
 
