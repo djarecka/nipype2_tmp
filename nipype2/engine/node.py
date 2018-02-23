@@ -161,9 +161,10 @@ class Node(object):
         # TOTHINK: I added savings, should I both return and save?
         #TODO: specify better the name of directory
         print("W RUN INTERFACE EL, before fout",state_dict, output)
+        dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+        os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
         for key_out in list(output.keys()):
-            os.makedirs(os.path.join(self.nodedir, key_out), exist_ok=True)
-            with open(os.path.join(self.nodedir, key_out, "output.txt"), "w") as fout:
+            with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
         return i, state_dict, output
 
