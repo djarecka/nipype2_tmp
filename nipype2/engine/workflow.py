@@ -29,8 +29,10 @@ class Workflow(object):
         else:
             self._nodes = []
         self.connected_var = {}
+        #self.connected_var_reverse = {}
         for nn in self._nodes:
             self.connected_var[nn] = {}
+        #    self.connected_var_reverse[nn] = {}
         logger.debug('Initialize workflow')
         self.workingdir = workingdir
         self.plugin = plugin
@@ -47,6 +49,7 @@ class Workflow(object):
         self.graph.add_nodes_from(nodes)
         for nn in nodes:
             self.connected_var[nn] = {}
+            #self.connected_var_reverse[nn] = {}
 
 
     def connect(self, from_node, from_socket, to_node, to_socket):
@@ -54,6 +57,8 @@ class Workflow(object):
         if not to_node in self.nodes:
             self.add_nodes(to_node)
         self.connected_var[to_node][to_socket] = (from_node, from_socket)
+        from_node.sending_output.append((from_socket, to_node, to_socket))
+        #self.connected_var_reverse[from_node][from_socket] = (to_node, to_socket)
         logger.debug('connecting {} and {}'.format(from_node, to_node))
 
 
@@ -67,10 +72,7 @@ class Workflow(object):
                 for inp, (out_node, out_var) in self.connected_var[nn].items():
                     nn.sufficient = False #it has some history (doesnt have to be in the loop)
                     nn._state_inputs.update(out_node._state_inputs)
-                    for key in list(out_node._state_inputs.keys()):
-                        nn._history[key] = (out_node, inp) # not sure if i will need inp
                     nn.needed_outputs.append((out_node, out_var, inp))
-                    out_node._send_outputs.append((out_var, nn, inp))
 #TMP: no mapper for now
                     # #pdb.set_trace()
                     # #if there is no mapper provided, i'm assuming that mapper is taken from the previous node

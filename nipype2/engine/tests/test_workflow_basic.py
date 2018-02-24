@@ -11,7 +11,9 @@ config.enable_debug_mode()
 logging.update_logging(config)
 
 def funA(a):
-    #time.sleep(5)
+    print("AAA BEFORE WAITITIN")
+    time.sleep(7)
+    print("AAA AFTER WAITITIN")
     return a**2
 
 def funB(b):
@@ -41,7 +43,7 @@ def test_workflow_basic_1():
 
     wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="test1")
     wf.run()
-
+    pdb.set_trace()
     assert nA.result["out"][0][0] == {"a":5}
     assert nA.result["out"][0][1] == 25
 
