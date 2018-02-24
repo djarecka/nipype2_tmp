@@ -101,7 +101,6 @@ def test_workflow_basic_3():
     wf.connect(nD, "out", nE, "e2")
     wf.run()
 
-    pdb.set_trace()
     assert nA.result["out"][0][0] == {"a": 5}
     assert nA.result["out"][0][1] == 25
 

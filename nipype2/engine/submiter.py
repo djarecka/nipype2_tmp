@@ -36,8 +36,8 @@ class Submiter(object):
             else:
                 self.node_line.append((node, i_n))
 
-        time.sleep(5)
 
+        # checking which node is ready to go. should be done my callback (TODO)
         while self.node_line:
             logger.debug("Submitter, node_line: {}".format(self.node_line))
             for i, (node, i_n) in enumerate(self.node_line):
@@ -78,11 +78,10 @@ class Submiter(object):
 
 
     def submit_work(self, node, i_n):
-        logger.debug("SUBMIT WORKER, node: {}".format(node))
         node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
                                         inp_ord_map=node._input_order_map)
-
         for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
+            logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
             self.worker.run_el(node.run_interface_el, (i, ind))
 
 

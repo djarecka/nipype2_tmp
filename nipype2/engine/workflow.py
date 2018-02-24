@@ -97,7 +97,6 @@ class Workflow(object):
 
     def run(self):
         self._preparing()
-        pdb.set_trace()
         sub = Submiter(self.graph_sorted, plugin=self.plugin)
         sub.run_workflow()
 
