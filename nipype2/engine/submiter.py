@@ -36,7 +36,6 @@ class Submiter(object):
             else:
                 self.node_line.append((node, i_n))
 
-
         # checking which node is ready to go. should be done my callback (TODO)
         while self.node_line:
             logger.debug("Submitter, node_line: {}".format(self.node_line))
@@ -59,6 +58,7 @@ class Submiter(object):
 
         # final reading of the results, this will be removed in the final version (TODO)
         # combining all results from specifics nodes together (for all state elements)
+        time.sleep(3)
         for (i_n, node) in enumerate(self.graph):
             for key_out in node._out_nm:
                 node._result[key_out] = []
