@@ -156,7 +156,7 @@ class Node(object):
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
-        return (i, ind, self) # added this for callback
+        return (i, ind, self.name) # added this for callback
 
 
     def preparing_node(self):

@@ -11,9 +11,9 @@ config.enable_debug_mode()
 logging.update_logging(config)
 
 def funA(a):
-    print("AAA BEFORE WAITITIN")
-    time.sleep(7)
-    print("AAA AFTER WAITITIN")
+    print("A Before Waiting")
+    time.sleep(5)
+    print("A After Waiting")
     return a**2
 
 def funB(b):
@@ -41,9 +41,9 @@ def test_workflow_basic_1():
               interface=Function_Interface(funB, ["out"]),
               name="nB", plugin="mp")
 
-    wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="test1")
+    wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="test_1")
     wf.run()
-    pdb.set_trace()
+
     assert nA.result["out"][0][0] == {"a":5}
     assert nA.result["out"][0][1] == 25
 
@@ -62,7 +62,7 @@ def test_workflow_basic_2():
     nC = Node(interface=Function_Interface(funC, ["out"]),
               name="nC", plugin="mp")
 
-    wf = Workflow(nodes=[nA, nB, nC], name="workflow_2", workingdir="test2")
+    wf = Workflow(nodes=[nA, nB, nC], name="workflow_2", workingdir="test_2")
     wf.connect(nA, "out", nC, "c")
     wf.run()
 
@@ -95,7 +95,7 @@ def test_workflow_basic_3():
 
 
 
-    wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_3", workingdir="test3")
+    wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_3", workingdir="test_3")
     wf.connect(nA, "out", nC, "c")
     wf.connect(nA, "out", nD, "d1")
     wf.connect(nB, "out", nD, "d2")

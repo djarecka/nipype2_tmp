@@ -14,6 +14,7 @@ import itertools
 from .. import config, logging
 logger = logging.getLogger('workflow')
 
+
 class MpWorker(object):
     def __init__(self, done, nr_proc=4): #should be none
         self.nr_proc = nr_proc
@@ -22,8 +23,8 @@ class MpWorker(object):
         logger.debug('Initialize Worker')
 
 
-    def run_el(self, interface, inp, node):
-        print("CALLING ", node)
-        self.pool.apply_async(interface, (inp[0], inp[1]), callback=self.done.put)#((inp, node)))
+    def run_el(self, interface, inp):
+        # dj NOTE: if I return (inp, node) as callback, then i have it right away (before node ends)
+        self.pool.apply_async(interface, (inp[0], inp[1]), callback=self.done.put)
 
 
