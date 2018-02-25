@@ -118,24 +118,24 @@ class Submiter(object):
 
 
 
-                    # not beeing used now (probably will be removed)
-    def _waiting_for_output(self):
-        # checking which node is ready to go. should be done my callback (TODO)
-        while self.node_line:
-            logger.debug("Submitter, node_line: {}".format(self.node_line))
-            for i, node in enumerate(self.node_line):
-                for (out_node, out_var, inp) in node.needed_outputs:
-                    # TODO this works only because there is no mapper!
-                    try:
-                        file_output = [name for name in glob.glob("{}/*/{}.txt".format(out_node.nodedir, out_var))][0]
-                    except(IndexError):
-                        file_output = None
-                    if file_output and os.path.isfile(file_output):
-                        with open(file_output) as f:
-                            node.inputs.update({inp: eval(f.readline())})
-                        node.needed_outputs.remove((out_node, out_var, inp))
-                if not node.needed_outputs:
-                    self.node_line.remove(node)
-                    node.sufficient = True
-                    self.submit_work(node)
-            time.sleep(3)
+    # not beeing used now (probably will be removed)
+    # def _waiting_for_output(self):
+    #     # checking which node is ready to go. should be done my callback (TODO)
+    #     while self.node_line:
+    #         logger.debug("Submitter, node_line: {}".format(self.node_line))
+    #         for i, node in enumerate(self.node_line):
+    #             for (out_node, out_var, inp) in node.needed_outputs:
+    #                 # TODO this works only because there is no mapper!
+    #                 try:
+    #                     file_output = [name for name in glob.glob("{}/*/{}.txt".format(out_node.nodedir, out_var))][0]
+    #                 except(IndexError):
+    #                     file_output = None
+    #                 if file_output and os.path.isfile(file_output):
+    #                     with open(file_output) as f:
+    #                         node.inputs.update({inp: eval(f.readline())})
+    #                     node.needed_outputs.remove((out_node, out_var, inp))
+    #             if not node.needed_outputs:
+    #                 self.node_line.remove(node)
+    #                 node.sufficient = True
+    #                 self.submit_work(node)
+    #         time.sleep(3)

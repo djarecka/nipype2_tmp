@@ -29,10 +29,8 @@ class Workflow(object):
         else:
             self._nodes = []
         self.connected_var = {}
-        #self.connected_var_reverse = {}
         for nn in self._nodes:
             self.connected_var[nn] = {}
-        #    self.connected_var_reverse[nn] = {}
         logger.debug('Initialize workflow')
         self.workingdir = workingdir
         self.plugin = plugin
@@ -49,7 +47,6 @@ class Workflow(object):
         self.graph.add_nodes_from(nodes)
         for nn in nodes:
             self.connected_var[nn] = {}
-            #self.connected_var_reverse[nn] = {}
 
 
     def connect(self, from_node, from_socket, to_node, to_socket):
@@ -58,7 +55,6 @@ class Workflow(object):
             self.add_nodes(to_node)
         self.connected_var[to_node][to_socket] = (from_node, from_socket)
         from_node.sending_output.append((from_socket, to_node, to_socket))
-        #self.connected_var_reverse[from_node][from_socket] = (to_node, to_socket)
         logger.debug('connecting {} and {}'.format(from_node, to_node))
 
 
