@@ -79,11 +79,10 @@ class Node(object):
         self._hierarchy = None
         self.plugin = plugin
         self._input_order_map = {}
-        self._history = {} #tracking which node should give input
         self.sufficient = True
         self._result = {}
         self.needed_outputs = []
-        self._send_outputs = []
+        self.sending_output = [] # what should be send to another nodes
         if self._reducer is None:
             self._out_nm = self._interface._output_nm
         else:
@@ -157,6 +156,7 @@ class Node(object):
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
+        return (i, ind, self.name) # added this for callback
 
 
     def preparing_node(self):
