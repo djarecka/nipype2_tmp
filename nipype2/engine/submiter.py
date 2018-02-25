@@ -28,12 +28,14 @@ class Submiter(object):
         if self.plugin == "mp":
             self.worker = MpWorker(done=self.done)
         logger.debug('Initialize Submitter, graph: {}'.format(graph))
-        self._count_subm = 0
+        self._count_subm = 0 # this might be not needed, see self._total_tasks_nr
         self._count_done = 0
+        self._total_tasks_nr = 0
 
 
     def run_workflow(self):
         for (i_n, node) in enumerate(self.graph):
+            self._total_tasks_nr += node.node_states._total_nr
             # checking if a node has all input (doesnt have to wait for others)
             if node.sufficient:
                 self._count_subm += 1
@@ -80,7 +82,6 @@ class Submiter(object):
     def submit_work(self, node):
         node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
                                         inp_ord_map=node._input_order_map)
-        pdb.set_trace()
         for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
             logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
             self.worker.run_el(node.run_interface_el, (i, ind))
@@ -92,7 +93,7 @@ class Submiter(object):
          combining all results from specifics nodes together (for all state elements)
         """
         # have to check if all results are ready
-        while self._count_done < self._count_subm:
+        while self._count_done < self._total_tasks_nr:#self._count_subm:
             try:
                 self.done.get(timeout=1)
                 self._count_done += 1

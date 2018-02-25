@@ -16,7 +16,7 @@ logger = logging.getLogger('workflow')
 
 
 class MpWorker(object):
-    def __init__(self, done, nr_proc=4): #should be none
+    def __init__(self, done, nr_proc=2): #should be none
         self.nr_proc = nr_proc
         self.done = done
         self.pool = mp.Pool(processes=self.nr_proc)

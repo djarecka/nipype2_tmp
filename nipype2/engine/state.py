@@ -36,6 +36,9 @@ class State(object):
         # list of all possible indexes in each dim, will be use to iterate
         # e.g. [[0, 1], [0, 1, 2]]
         self._all_elements = [range(i) for i in self._shape]
+        self._total_nr = 1
+        for el in self._all_elements:
+            self._total_nr *= len(el)
         self._inp_ord_map = inp_ord_map
 
 
