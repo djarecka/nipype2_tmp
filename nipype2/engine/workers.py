@@ -25,6 +25,6 @@ class MpWorker(object):
 
     def run_el(self, interface, inp):
         # dj NOTE: if I return (inp, node) as callback, then i have it right away (before node ends)
-        self.pool.apply_async(interface, (inp[0], inp[1]), callback=self.done.put)
+        self.pool.apply_async(interface, (inp[0], inp[1], inp[2]), callback=self.done.put)
 
 

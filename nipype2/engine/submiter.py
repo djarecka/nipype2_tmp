@@ -35,6 +35,7 @@ class Submiter(object):
 
     def run_workflow(self):
         for (i_n, node) in enumerate(self.graph):
+            #pdb.set_trace()
             self._total_tasks_nr += node.node_states._total_nr
             # checking if a node has all input (doesnt have to wait for others)
             if node.sufficient:
@@ -72,7 +73,6 @@ class Submiter(object):
 
                 if not to_node.needed_outputs:
                     self.node_line.remove(to_node)
-                    to_node.sufficient = True
                     self._count_subm += 1
                     self.submit_work(to_node)
             else:
@@ -83,8 +83,11 @@ class Submiter(object):
         node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
                                         inp_ord_map=node._input_order_map)
         for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
+            inputs_dict = node.node_states_inputs.state_values(ind)
             logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
-            self.worker.run_el(node.run_interface_el, (i, ind))
+            self.worker.run_el(node.run_interface_el, (i, ind, inputs_dict))
+
+
 
 
     def _collecting_results(self):

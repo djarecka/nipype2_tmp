@@ -144,10 +144,10 @@ class Node(object):
             return '{}'.format(self._id)
 
 
-    def run_interface_el(self, i, ind):
+    def run_interface_el(self, i, ind, inputs_dict):
         """ running interface one element generated from node_state."""
         logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
-        inputs_dict = self.node_states_inputs.state_values(ind)
+        #inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
         self._interface.run(inputs_dict)
         output = self._interface.output
