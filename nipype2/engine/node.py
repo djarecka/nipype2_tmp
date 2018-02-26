@@ -81,7 +81,6 @@ class Node(object):
         self._input_order_map = {}
         self.sufficient = True
         self._result = {}
-        self.needed_outputs = []
         self.sending_output = [] # what should be send to another nodes
         if self._reducer is None:
             self._out_nm = self._interface._output_nm

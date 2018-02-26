@@ -69,8 +69,6 @@ class Workflow(object):
                     nn.sufficient = False #it has some history (doesnt have to be in the loop)
                     nn._state_inputs.update(out_node._state_inputs)
                     nn._inputs.update({inp: np.full(out_node.node_states._shape, fill_value=None)})
-                    nn.needed_outputs.append((out_node, out_var, inp))
-                    pdb.set_trace()
                     print("WORKFLOW PREP",nn._state_inputs, nn._inputs )
                     # MAPPER part
                     #pdb.set_trace()

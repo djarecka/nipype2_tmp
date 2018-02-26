@@ -43,7 +43,8 @@ class Submiter(object):
                 self.submit_work_node(node)
             # if its not, its been added to a line
             else:
-                self.node_line.append(node)
+                for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
+                    self.node_line.append((node, (i, ind)))
 
         # TODO: should add an extra condition to not stay here forever
         while self.node_line:
@@ -69,24 +70,26 @@ class Submiter(object):
         #pdb.set_trace()
         # if we have scalar
         for (from_socket, to_node, to_socket) in from_node.sending_output:
-            if (from_node, from_socket, to_socket) in to_node.needed_outputs:
-                # TODO this works only because there is no mapper!
-                #pdb.set_trace()
-                file_output = os.path.join(dir_out, from_socket+".txt")
-                print("before updating", to_node.inputs, to_node.node_states_inputs.state_values(ind))
-                with open(file_output) as f:
-                    to_node.inputs[to_socket][ind] = eval(f.readline())
-                print("after updating", to_node.inputs, to_node.node_states_inputs.state_values(ind))
+            # TODO this works only because there is no mapper!
+            #pdb.set_trace()
+            file_output = os.path.join(dir_out, from_socket+".txt")
+            print("before updating", to_node.inputs, to_node.node_states_inputs.state_values(ind))
+            with open(file_output) as f:
+                to_node.inputs[to_socket][ind] = eval(f.readline())
+            print("after updating", to_node.inputs, to_node.node_states_inputs.state_values(ind))
 
-                to_node.needed_outputs.remove((from_node, from_socket, to_socket))
-                print("CONNECTING OUT", to_node, to_node.inputs)
 
-                if not to_node.needed_outputs:
-                    self.node_line.remove(to_node)
-                    self._count_subm += 1
-                    self.submit_work_node(to_node)#,  el_out[0], ind)
-            else:
-                raise Exception("something wrong with connections")
+            # TODO: this should be improved, since I'm checking all elements
+            for (i, ind) in enumerate(itertools.product(*to_node.node_states._all_elements)):
+                if (to_node, (i, ind)) in self.node_line: #TODO, shouldn't be required
+                    inputs_dict = to_node.node_states_inputs.state_values(ind)
+                    if all(inputs_dict.values()):
+                        #pdb.set_trace()
+                        self.node_line.remove((to_node, (i, ind)))
+                        self._count_subm += 1
+                        self.submit_work_el(to_node,  el_out[0], ind)
+            #else:
+            #    raise Exception("something wrong with connections")
 
 
 
@@ -99,10 +102,12 @@ class Submiter(object):
             logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
             self.worker.run_el(node.run_interface_el, (i, ind, inputs_dict))
 
+
     def submit_work_el(self, node, i, ind):
         """submit work for one element of a nodep"""
-
-
+        inputs_dict = node.node_states_inputs.state_values(ind)
+        logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
+        self.worker.run_el(node.run_interface_el, (i, ind, inputs_dict))
 
 
     def _collecting_results(self):
