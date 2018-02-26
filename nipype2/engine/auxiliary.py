@@ -104,6 +104,7 @@ def mapping_axis(state_inputs, mapper_rpn):
     elif len(stack) > 1:
         raise Exception("exception from mapping_axis")
     elif stack[0] != "OUT":
+        #pdb.set_trace()
         current_axis = [i for i in range(state_inputs[stack[0]].ndim)]
         axis_for_input[stack[0]] = current_axis
 

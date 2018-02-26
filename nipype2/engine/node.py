@@ -81,7 +81,6 @@ class Node(object):
         self._input_order_map = {}
         self.sufficient = True
         self._result = {}
-        self.needed_outputs = []
         self.sending_output = [] # what should be send to another nodes
         if self._reducer is None:
             self._out_nm = self._interface._output_nm
@@ -144,10 +143,10 @@ class Node(object):
             return '{}'.format(self._id)
 
 
-    def run_interface_el(self, i, ind):
+    def run_interface_el(self, i, ind, inputs_dict):
         """ running interface one element generated from node_state."""
         logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
-        inputs_dict = self.node_states_inputs.state_values(ind)
+        #inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
         self._interface.run(inputs_dict)
         output = self._interface.output
@@ -156,7 +155,7 @@ class Node(object):
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
-        return (i, ind, self.name) # added this for callback
+        return (i, ind, self.name, os.path.join(self.nodedir, dir_nm_el)) # added this for callback
 
 
     def preparing_node(self):
@@ -165,5 +164,7 @@ class Node(object):
         os.makedirs(self.nodedir, exist_ok=True)
 
         self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
-
+        # preparing input (at this point some of the values can be None)
+        self.node_states_inputs = state.State(state_inputs=self._inputs, mapper=self._mapper,
+                                              inp_ord_map=self._input_order_map)
 

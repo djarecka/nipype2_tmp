@@ -16,7 +16,7 @@ logger = logging.getLogger('workflow')
 
 
 class MpWorker(object):
-    def __init__(self, done, nr_proc=4): #should be none
+    def __init__(self, done, nr_proc=2): #should be none
         self.nr_proc = nr_proc
         self.done = done
         self.pool = mp.Pool(processes=self.nr_proc)
@@ -25,6 +25,6 @@ class MpWorker(object):
 
     def run_el(self, interface, inp):
         # dj NOTE: if I return (inp, node) as callback, then i have it right away (before node ends)
-        self.pool.apply_async(interface, (inp[0], inp[1]), callback=self.done.put)
+        self.pool.apply_async(interface, (inp[0], inp[1], inp[2]), callback=self.done.put)
 
 
