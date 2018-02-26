@@ -156,7 +156,7 @@ class Node(object):
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
-        return (i, ind, self.name) # added this for callback
+        return (i, ind, self.name, os.path.join(self.nodedir, dir_nm_el)) # added this for callback
 
 
     def preparing_node(self):
@@ -165,5 +165,7 @@ class Node(object):
         os.makedirs(self.nodedir, exist_ok=True)
 
         self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
-
+        # preparing input (at this point some of the values can be None)
+        self.node_states_inputs = state.State(state_inputs=self._inputs, mapper=self._mapper,
+                                              inp_ord_map=self._input_order_map)
 
