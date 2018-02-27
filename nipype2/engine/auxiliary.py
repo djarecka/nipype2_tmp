@@ -151,6 +151,7 @@ class Function_Interface(object):
                     raise Exception("no {} in the input dictionary".format(key_inp))
         fun_output = self.function(**input)
         logger.debug("Function Interf, input={}, fun_out={}".format(input, fun_output))
+        #pdb.set_trace()
         if type(fun_output) is tuple:
             if len(self._output_nm) == len(fun_output):
                 for i, out in enumerate(fun_output):

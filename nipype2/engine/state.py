@@ -11,10 +11,12 @@ class State(object):
 
         self._mapper = mapper
         if self._mapper:
+            #print("MAPPER W IF", self._mapper)
             # changing mapper (as in rpn), so I can read from left to right
             # e.g. if mapper=('d', ['e', 'r']), _mapper_rpn=['d', 'e', 'r', '*', '.']
             self._mapper_rpn = aux.mapper2rpn(self._mapper)
             self._input_names_mapper = [i for i in self._mapper_rpn if i not in ["*", "."]]
+            #print("MAPPER RPN", self._mapper_rpn)
         else:
             self._mapper_rpn = []
             self._input_names_mapper = []

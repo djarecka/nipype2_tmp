@@ -77,15 +77,20 @@ class Workflow(object):
                         #pdb.set_trace()
                         nn._state_mapper = out_node._state_mapper
                         nn._mapper = inp
+                    elif not out_node._state_mapper: # we shouldn't change anything
+                        pass
                     # when the mapper from previous node is used in the current node (it has to be the same syntax)
                     elif nn._state_mapper and out_node._state_mapper in nn._state_mapper:  # _state_mapper or _mapper?? TODO
                         #dj: if I use the syntax with state_inp name than I don't have to change the mapper...
-                        pass
+                        if type(nn._mapper) is tuple:
+                            nn._mapper = tuple([inp if x == out_node._state_mapper else x for x in list(nn._mapper)])
+
                     #TODO: implement inner mapper
                     elif  nn._state_mapper and inp in nn._state_mapper:
                         raise Exception("{} can be in the mapper only together with {}, i.e. {})".format(inp, out[1],
                                                                                                         [out[1], inp]))
-
+                    #pdb.set_trace()
+                    pass
             except(KeyError):
                 # tmp: we don't care about nn that are not in self.connected_var
                 pass

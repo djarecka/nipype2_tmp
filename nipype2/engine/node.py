@@ -150,6 +150,8 @@ class Node(object):
         state_dict = self.node_states.state_values(ind)
         self._interface.run(inputs_dict)
         output = self._interface.output
+        #pdb.set_trace()
+        print("RUN INTER EL OUTPUT", output)
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
         os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
         for key_out in list(output.keys()):
