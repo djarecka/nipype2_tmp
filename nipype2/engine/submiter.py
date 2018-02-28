@@ -30,18 +30,26 @@ class Submiter(object):
 
     def run_workflow(self):
         for (i_n, node) in enumerate(self.graph):
-            # checking if a node has all input (doesnt have to wait for others)
+            # submitting all the nodes who are self sufficient (self.graph is already sorted)
             if node.sufficient:
                 self.submit_work(node)
             # if its not, its been added to a line
             else:
-                self.node_line.append((node, i_n))
+                break
 
-        time.sleep(5)
+        # all nodes that are not self sufficient will go to the line (i think ordered list work good here)
+        self.node_line = self.graph[i_n:]
+
+        while self._nodes_check():
+            time.sleep(3)
+
+    def _nodes_check(self):
+        for to_node in self.node_line:
+
 
         while self.node_line:
             logger.debug("Submitter, node_line: {}".format(self.node_line))
-            for i, (node, i_n) in enumerate(self.node_line):
+            for i, node in enumerate(self.node_line):
                 for (out_node, out_var, inp) in node.needed_outputs:
                     # TODO this works only because there is no mapper!
                     try:
@@ -53,7 +61,7 @@ class Submiter(object):
                             node.inputs.update({inp: eval(f.readline())})
                         node.needed_outputs.remove((out_node, out_var, inp))
                 if not node.needed_outputs:
-                    self.node_line.remove((node, i_n))
+                    self.node_line.remove(node)
                     node.sufficient = True
                     self.submit_work(node)
             time.sleep(3)
