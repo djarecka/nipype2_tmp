@@ -60,22 +60,22 @@ class Submiter(object):
 
         # final reading of the results, this will be removed in the final version (TODO)
         # combining all results from specifics nodes together (for all state elements)
-        for (i_n, node) in enumerate(self.graph):
-            for key_out in node._out_nm:
-                node._result[key_out] = []
-                if node._inputs:
-                    files = [name for name in glob.glob("{}/*/{}.txt".format(node.nodedir, key_out))]
-                    for file in files:
-                        st_el = file.split(os.sep)[-2].split("_")
-                        st_dict =  collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
-                                                                for el in st_el])
-                        with open(file) as fout:
-                            node._result[key_out].append((st_dict, eval(fout.readline())))
-                # for nodes without input
-                else:
-                    files = [name for name in glob.glob("{}/{}.txt".format(node.nodedir, key_out))]
-                    with open(files[0]) as fout:
-                        node._result[key_out].append(({}, eval(fout.readline())))
+        # for (i_n, node) in enumerate(self.graph):
+        #     for key_out in node._out_nm:
+        #         node._result[key_out] = []
+        #         if node._inputs:
+        #             files = [name for name in glob.glob("{}/*/{}.txt".format(node.nodedir, key_out))]
+        #             for file in files:
+        #                 st_el = file.split(os.sep)[-2].split("_")
+        #                 st_dict =  collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+        #                                                         for el in st_el])
+        #                 with open(file) as fout:
+        #                     node._result[key_out].append((st_dict, eval(fout.readline())))
+        #         # for nodes without input
+        #         else:
+        #             files = [name for name in glob.glob("{}/{}.txt".format(node.nodedir, key_out))]
+        #             with open(files[0]) as fout:
+        #                 node._result[key_out].append(({}, eval(fout.readline())))
 
 
 
