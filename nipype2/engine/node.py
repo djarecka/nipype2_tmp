@@ -5,16 +5,16 @@
 
 from __future__ import print_function, division, unicode_literals, absolute_import
 from builtins import object
-from collections import defaultdict
 
 from future import standard_library
 standard_library.install_aliases()
 
 from copy import deepcopy
-import re, os, time, pdb
+import re, os, time, pdb, glob
 import numpy as np
 import networkx as nx
 import itertools
+import collections
 
 from . import state
 
@@ -107,7 +107,7 @@ class Node(object):
             state_dict = self.node_states.state_values(ind)
             dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
             os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
-            for key_out in self._interface._output_nm:
+            for key_out in self._out_nm:
                 if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
                     return False
         self._global_done = True
@@ -116,10 +116,32 @@ class Node(object):
 
     @property
     def result(self):
-        if self._result:
-            return self._result
-        else:
-            raise Exception("can't find results...")
+        if not self._result:
+            self._reading_results()
+        return self._result
+
+    def _reading_results(self):
+        """
+        reading results from file,
+        doesn't check if everything is ready, i.e. if self.global_done"""
+        # TODO: probably needs changes when reducer
+        for key_out in self._out_nm:
+            self._result[key_out] = []
+            if self._state_inputs:
+                files = [name for name in glob.glob("{}/*/{}.txt".format(self.nodedir, key_out))]
+                for file in files:
+                    st_el = file.split(os.sep)[-2].split("_")
+                    st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                            for el in st_el])
+                    with open(file) as fout:
+                        self._result[key_out].append((st_dict, eval(fout.readline())))
+            # for nodes without input
+            else:
+                files = [name for name in glob.glob("{}/{}.txt".format(self.nodedir, key_out))]
+                with open(files[0]) as fout:
+                    self._result[key_out].append(({}, eval(fout.readline())))
+
+
 
 
     @property
