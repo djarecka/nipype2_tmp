@@ -200,7 +200,6 @@ class Node(object):
                                        if i in list(from_node._state_inputs.keys())])
             file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
             with open(file_from) as f:
-                #print("RUN INTERFACE LOOP FILE", f.readline())
                 inputs_dict[to_socket] = eval(f.readline())
 
         self._interface.run(inputs_dict)

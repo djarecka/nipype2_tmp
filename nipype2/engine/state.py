@@ -76,9 +76,6 @@ class State(object):
 
 
     def state_values(self, ind):
-        #print("IND", ind)
-        #pdb.set_trace()
-
 
         from collections import OrderedDict
         if len(ind) > self._ndim:
