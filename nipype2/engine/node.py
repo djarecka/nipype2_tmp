@@ -88,7 +88,30 @@ class Node(object):
         else:
             raise Exception("have to finish...")
         logger.debug('Initialize Node {}'.format(name))
+        self._global_done = False # if all tasks are done (if mapper present, I'm checking for all state elements)
 
+
+    @property
+    def global_done(self):
+        # once _global_done os True, this should not change
+        if self._global_done:
+            return self._global_done
+        else:
+            return self._check_all_results()
+
+
+    def _check_all_results(self):
+        # checking if all files that should be created are present
+        # TODO: if reducer is present, that should be changed
+        for ind in itertools.product(*self.node_states._all_elements):
+            state_dict = self.node_states.state_values(ind)
+            dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+            os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
+            for key_out in self._interface._output_nm:
+                if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
+                    return False
+        self._global_done = True
+        return True
 
 
     @property
@@ -149,6 +172,15 @@ class Node(object):
         logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
         inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
+        # reading extra inputs that come from previous nodes
+        for (from_node, from_socket, to_socket) in self.needed_outputs:
+            dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
+                                       if i in list(from_node._state_inputs.keys())])
+            file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
+            with open(file_from) as f:
+                #print("RUN INTERFACE LOOP FILE", f.readline())
+                inputs_dict[to_socket] = eval(f.readline())
+
         self._interface.run(inputs_dict)
         output = self._interface.output
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])

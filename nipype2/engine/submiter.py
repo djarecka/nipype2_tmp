@@ -26,7 +26,7 @@ class Submiter(object):
         logger.debug('Initialize Submitter, graph: {}'.format(graph))
         self._count_subm = 0
         self._count_done = 0
-
+        self._to_finish = list(self.graph)
 
     def run_workflow(self):
         for (i_n, node) in enumerate(self.graph):
@@ -40,31 +40,43 @@ class Submiter(object):
         # all nodes that are not self sufficient will go to the line (i think ordered list work good here)
         self.node_line = self.graph[i_n:]
 
+        # this parts submits nodes that are waiting to be run
+        # it should stop when nothing is waiting
         while self._nodes_check():
+            logger.debug("Submitter, in while, node_line: {}".format(self.node_line))
             time.sleep(3)
+
+        # this part simply waiting for all "last nodes" to finish
+        while self._output_check():
+            logger.debug("Submitter, in while, to_finish: {}".format(self._to_finish))
+            time.sleep(3)
+
 
     def _nodes_check(self):
         for to_node in self.node_line:
-
-
-        while self.node_line:
-            logger.debug("Submitter, node_line: {}".format(self.node_line))
-            for i, node in enumerate(self.node_line):
-                for (out_node, out_var, inp) in node.needed_outputs:
-                    # TODO this works only because there is no mapper!
+            ready = True
+            for (from_node, from_socket, to_socket) in to_node.needed_outputs:
+#                pdb.set_trace()
+                if from_node.global_done:
                     try:
-                        file_output = [name for name in glob.glob("{}/*/{}.txt".format(out_node.nodedir, out_var))][0]
-                    except(IndexError):
-                        file_output = None
-                    if file_output and os.path.isfile(file_output):
-                        with open(file_output) as f:
-                            node.inputs.update({inp: eval(f.readline())})
-                        node.needed_outputs.remove((out_node, out_var, inp))
-                if not node.needed_outputs:
-                    self.node_line.remove(node)
-                    node.sufficient = True
-                    self.submit_work(node)
-            time.sleep(3)
+                        self._to_finish.remove(from_node)
+                    except ValueError:
+                        pass
+                else:
+                    ready = False
+                    break
+            if ready:
+                self.submit_work(to_node)
+                self.node_line.remove(to_node)
+        return self.node_line
+
+
+    def _output_check(self):
+        for node in self._to_finish:
+            if node.global_done:
+                self._to_finish.remove(node)
+        return self._to_finish
+
 
         # final reading of the results, this will be removed in the final version (TODO)
         # combining all results from specifics nodes together (for all state elements)
