@@ -24,8 +24,6 @@ class Submiter(object):
         if self.plugin == "mp":
             self.worker = MpWorker()
         logger.debug('Initialize Submitter, graph: {}'.format(graph))
-        self._count_subm = 0
-        self._count_done = 0
         self._to_finish = list(self.graph)
 
     def run_workflow(self):
@@ -37,7 +35,8 @@ class Submiter(object):
             else:
                 break
 
-        # all nodes that are not self sufficient will go to the line (i think ordered list work good here)
+        # all nodes that are not self sufficient will go to the line
+        # (i think ordered list work well here, since it's more efficient to check within a specific order)
         self.node_line = self.graph[i_n:]
 
         # this parts submits nodes that are waiting to be run
