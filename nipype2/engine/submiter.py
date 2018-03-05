@@ -45,6 +45,7 @@ class Submiter(object):
             logger.debug("Submitter, in while, node_line: {}".format(self.node_line))
             time.sleep(3)
 
+        # TODO(?): combining two while together
         # this part simply waiting for all "last nodes" to finish
         while self._output_check():
             logger.debug("Submitter, in while, to_finish: {}".format(self._to_finish))
