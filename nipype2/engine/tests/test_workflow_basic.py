@@ -26,6 +26,9 @@ def funD(d1, d2):
     return d1 + d2
 
 def funE(e1, e2):
+    print("E Before Waiting")
+    time.sleep(10)
+    print("E After Waiting")
     return e1 * e2
 
 def funF():

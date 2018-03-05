@@ -5,16 +5,16 @@
 
 from __future__ import print_function, division, unicode_literals, absolute_import
 from builtins import object
-from collections import defaultdict
 
 from future import standard_library
 standard_library.install_aliases()
 
 from copy import deepcopy
-import re, os, time, pdb
+import re, os, time, pdb, glob
 import numpy as np
 import networkx as nx
 import itertools
+import collections
 
 from . import state
 
@@ -88,15 +88,60 @@ class Node(object):
         else:
             raise Exception("have to finish...")
         logger.debug('Initialize Node {}'.format(name))
+        self._global_done = False # if all tasks are done (if mapper present, I'm checking for all state elements)
 
+
+    @property
+    def global_done(self):
+        # once _global_done os True, this should not change
+        if self._global_done:
+            return self._global_done
+        else:
+            return self._check_all_results()
+
+
+    def _check_all_results(self):
+        # checking if all files that should be created are present
+        # TODO: if reducer is present, that should be changed
+        for ind in itertools.product(*self.node_states._all_elements):
+            state_dict = self.node_states.state_values(ind)
+            dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+            os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
+            for key_out in self._out_nm:
+                if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
+                    return False
+        self._global_done = True
+        return True
 
 
     @property
     def result(self):
-        if self._result:
-            return self._result
-        else:
-            raise Exception("can't find results...")
+        if not self._result:
+            self._reading_results()
+        return self._result
+
+    def _reading_results(self):
+        """
+        reading results from file,
+        doesn't check if everything is ready, i.e. if self.global_done"""
+        # TODO: probably needs changes when reducer
+        for key_out in self._out_nm:
+            self._result[key_out] = []
+            if self._state_inputs:
+                files = [name for name in glob.glob("{}/*/{}.txt".format(self.nodedir, key_out))]
+                for file in files:
+                    st_el = file.split(os.sep)[-2].split("_")
+                    st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                            for el in st_el])
+                    with open(file) as fout:
+                        self._result[key_out].append((st_dict, eval(fout.readline())))
+            # for nodes without input
+            else:
+                files = [name for name in glob.glob("{}/{}.txt".format(self.nodedir, key_out))]
+                with open(files[0]) as fout:
+                    self._result[key_out].append(({}, eval(fout.readline())))
+
+
 
 
     @property
@@ -149,6 +194,14 @@ class Node(object):
         logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
         inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
+        # reading extra inputs that come from previous nodes
+        for (from_node, from_socket, to_socket) in self.needed_outputs:
+            dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
+                                       if i in list(from_node._state_inputs.keys())])
+            file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
+            with open(file_from) as f:
+                inputs_dict[to_socket] = eval(f.readline())
+
         self._interface.run(inputs_dict)
         output = self._interface.output
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
@@ -156,7 +209,6 @@ class Node(object):
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
-        return (i, ind, self.name) # added this for callback
 
 
     def preparing_node(self):
