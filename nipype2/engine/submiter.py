@@ -78,8 +78,6 @@ class Submiter(object):
 
 
     def submit_work(self, node):
-        node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
-                                        inp_ord_map=node._input_order_map)
         for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
             logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
             self.worker.run_el(node.run_interface_el, (i, ind))

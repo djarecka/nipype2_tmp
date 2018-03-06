@@ -192,8 +192,9 @@ class Node(object):
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
         logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
-        inputs_dict = self.node_states_inputs.state_values(ind)
         state_dict = self.node_states.state_values(ind)
+        inputs_dict = {k: state_dict[k] for k in self._inputs.keys()}
+
         # reading extra inputs that come from previous nodes
         for (from_node, from_socket, to_socket) in self.needed_outputs:
             dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
@@ -201,7 +202,8 @@ class Node(object):
             file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
             with open(file_from) as f:
                 inputs_dict[to_socket] = eval(f.readline())
-
+        logger.debug("Run interface el, name={}, inputs_dict={}, state_dict={}".format(
+                                                            self.name, inputs_dict, state_dict))
         self._interface.run(inputs_dict)
         output = self._interface.output
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
@@ -215,7 +217,6 @@ class Node(object):
         # adding directory (should have workflowdir already)
         self.nodedir = os.path.join(self.wfdir, self.fullname)
         os.makedirs(self.nodedir, exist_ok=True)
-
         self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
 
 
