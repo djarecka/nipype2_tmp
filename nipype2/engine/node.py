@@ -86,7 +86,9 @@ class Node(object):
         if self._reducer is None:
             self._out_nm = self._interface._output_nm
         else:
-            raise Exception("have to finish...")
+            # TODO: has to be probably changed:
+            self._out_nm = self._interface._output_nm
+            #raise Exception("have to finish...")
         logger.debug('Initialize Node {}'.format(name))
         self._global_done = False # if all tasks are done (if mapper present, I'm checking for all state elements)
 
@@ -106,7 +108,9 @@ class Node(object):
         for ind in itertools.product(*self.node_states._all_elements):
             state_dict = self.node_states.state_values(ind)
             dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
-            os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
+            if self._reducer:
+                dir_red = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i in self._reducer])
+                dir_nm_el = os.path.join(dir_red, dir_nm_el)
             for key_out in self._out_nm:
                 if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
                     return False
@@ -117,7 +121,10 @@ class Node(object):
     @property
     def result(self):
         if not self._result:
-            self._reading_results()
+            if self._reducer:
+                self._reading_results_reducer()
+            else:
+               self._reading_results()
         return self._result
 
     def _reading_results(self):
@@ -142,6 +149,28 @@ class Node(object):
                     self._result[key_out].append(({}, eval(fout.readline())))
 
 
+    # TODO: should be probably combine with _reading_results
+    def _reading_results_reducer(self):
+        """
+        reading results from file,
+        doesn't check if everything is ready, i.e. if self.global_done"""
+        # TODO: probably needs changes when reducer
+        for key_out in self._out_nm:
+            self._result[key_out] = []
+            dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
+            for ii, dir_red in enumerate(dir_red_l):
+                red_el = dir_red.split(os.sep)[-1].split("_")
+                red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                   for el in red_el])
+                self._result[key_out].append((red_dict, []))
+                #pdb.set_trace()
+                files = [name for name in glob.glob("{}/*/{}.txt".format(dir_red, key_out))]
+                for file in files:
+                    st_el = file.split(os.sep)[-2].split("_")
+                    st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                            for el in st_el])
+                    with open(file) as fout:
+                        self._result[key_out][ii][1].append((st_dict, eval(fout.readline())))
 
 
     @property
@@ -207,6 +236,10 @@ class Node(object):
         self._interface.run(inputs_dict)
         output = self._interface.output
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+        if self._reducer:
+            dir_red = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i in self._reducer])
+            os.makedirs(os.path.join(self.nodedir, dir_red), exist_ok=True)
+            dir_nm_el = os.path.join(dir_red, dir_nm_el)
         os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
