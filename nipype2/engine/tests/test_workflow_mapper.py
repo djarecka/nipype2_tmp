@@ -14,6 +14,9 @@ def funA(a):
     print("A Before Waiting")
     time.sleep(5)
     print("A After Waiting")
+    if a==5:
+        time.sleep(10)
+        print("A after extra waiting")
     return a**2
 
 def funB(b):
@@ -27,6 +30,7 @@ def funD(d1, d2):
     return d1 + d2
 
 def funE(e1, e2):
+    time.sleep(10)
     return e1 * e2
 
 def funF():

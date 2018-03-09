@@ -191,17 +191,8 @@ class Node(object):
 
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
-        logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
-        state_dict = self.node_states.state_values(ind)
-        inputs_dict = {k: state_dict[k] for k in self._inputs.keys()}
-
-        # reading extra inputs that come from previous nodes
-        for (from_node, from_socket, to_socket) in self.needed_outputs:
-            dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
-                                       if i in list(from_node._state_inputs.keys())])
-            file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
-            with open(file_from) as f:
-                inputs_dict[to_socket] = eval(f.readline())
+        #logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
+        state_dict, inputs_dict = self._collecting_input_el(ind)
         logger.debug("Run interface el, name={}, inputs_dict={}, state_dict={}".format(
                                                             self.name, inputs_dict, state_dict))
         self._interface.run(inputs_dict)
@@ -211,6 +202,26 @@ class Node(object):
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
+
+
+    def _collecting_input_el(self, ind):
+        state_dict = self.node_states.state_values(ind)
+        inputs_dict = {k: state_dict[k] for k in self._inputs.keys()}
+        # reading extra inputs that come from previous nodes
+        for (from_node, from_socket, to_socket) in self.needed_outputs:
+            dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
+                                       if i in list(from_node._state_inputs.keys())])
+            file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
+            with open(file_from) as f:
+                inputs_dict[to_socket] = eval(f.readline())
+        return state_dict, inputs_dict
+
+    def checking_input_el(self, ind):
+        try:
+            self._collecting_input_el(ind)
+            return True
+        except: #TODO specify
+            return False
 
 
     def preparing_node(self):
