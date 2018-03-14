@@ -55,7 +55,7 @@ def test_workflow_reducer_2():
               interface=Function_Interface(funD, ["out"]), reducer="d1",
               name="nD", plugin="mp")
 
-    wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_reducer_1a")
+    wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_reducer_2")
     wf.run()
 
     expected = [({"d1":3}, [({"d1":3, "d2": 10}, 13), ({"d1":3, "d2": 40}, 43)]),
@@ -66,3 +66,81 @@ def test_workflow_reducer_2():
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
 
+
+def test_workflow_reducer_3():
+    """graph: A -> D"""
+    nA = Node(inputs={"a": np.array([3, 4, 3])}, mapper="a",
+              interface=Function_Interface(funA, ["out"]),
+              name="nA", plugin="mp")
+    nD = Node(inputs={"d1": np.array([10, 20, 30])},
+              mapper=("a", "d1"), reducer="a",
+              interface=Function_Interface(funD, ["out"]),
+              name="nD", plugin="mp")
+
+    wf = Workflow(nodes=[nA, nD], name="workflow_4", workingdir="test_reducer_3")
+    wf.connect(nA, "out", nD, "d2")
+    wf.run()
+
+    expected = [({"a":3}, [({"a":3, "d1": 10}, 19), ({"a":3, "d1": 30}, 39)]),
+                ({"a": 4}, [({"a":4, "d1":20}, 36)])]
+
+    for i, res in enumerate(expected):
+        assert nD.result["out"][i][0] == res[0]
+        assert nD.result["out"][i][1] == res[1]
+
+
+def test_workflow_reducer_3a():
+    """graph: A -> D"""
+    nA = Node(inputs={"a": np.array([3, 4, 3])}, mapper="a",
+              interface=Function_Interface(funA, ["out"]),
+              name="nA", plugin="mp")
+    nD = Node(inputs={"d1": np.array([10, 20, 30])},
+              mapper=("a", "d1"), reducer="d1",
+              interface=Function_Interface(funD, ["out"]),
+              name="nD", plugin="mp")
+
+    wf = Workflow(nodes=[nA, nD], name="workflow_4", workingdir="test_reducer_3a")
+    wf.connect(nA, "out", nD, "d2")
+    wf.run()
+
+    expected = [({"d1":10}, [({"a":3, "d1":10}, 19)]),
+                ({"d1":20}, [({"a":4, "d1":20}, 36)]),
+                ({"d1":30}, [({"a":3, "d1":30}, 39)])]
+
+    for i, res in enumerate(expected):
+        assert nD.result["out"][i][0] == res[0]
+        assert nD.result["out"][i][1] == res[1]
+
+
+def test_workflow_reducer_4():
+    """graph: D; mapper: vector """
+    nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
+              interface=Function_Interface(funD, ["out"]), reducer="d1",
+              name="nD", plugin="mp")
+
+    wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_reducer_4")
+    wf.run()
+
+    expected = [({"d1":3}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":20}, 23)]),
+                ({"d1":4}, [({"d1":4, "d2":10}, 14), ({"d1":4, "d2":20}, 24)])]
+
+    for i, res in enumerate(expected):
+        assert nD.result["out"][i][0] == res[0]
+        assert nD.result["out"][i][1] == res[1]
+
+
+def test_workflow_reducer_4a():
+    """graph: D; mapper: vector """
+    nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
+              interface=Function_Interface(funD, ["out"]), reducer="d2",
+              name="nD", plugin="mp")
+
+    wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_reducer_4a")
+    wf.run()
+
+    expected = [({"d2":10}, [({"d1":3, "d2":10}, 13), ({"d1":4, "d2":10}, 14)]),
+                ({"d2":20}, [({"d1":3, "d2":20}, 23), ({"d1":4, "d2":20}, 24)])]
+
+    for i, res in enumerate(expected):
+        assert nD.result["out"][i][0] == res[0]
+        assert nD.result["out"][i][1] == res[1]
