@@ -31,7 +31,10 @@ class Submiter(object):
             # submitting all the nodes who are self sufficient (self.graph is already sorted)
             if node.sufficient:
                 self.submit_work(node)
-
+                # adding task for reducer
+                if node._reducer_interface:
+                    #decided to add it as one task, since I have to wait for everyone before  can start it anyway
+                    self.node_line.append((node, "reduction", None))
             # if its not, its been added to a line
             else:
                 break
@@ -42,6 +45,10 @@ class Submiter(object):
         for nn in self.graph[i_n:]:
             for (i, ind) in enumerate(itertools.product(*nn.node_states._all_elements)):
                 self.node_line.append((nn, i, ind))
+            if nn._reducer_interface:
+                # decided to add it as one task, since I have to wait for everyone before  can start it anyway
+                self.node_line.append((nn, "reduction", None))
+
 
         # this parts submits nodes that are waiting to be run
         # it should stop when nothing is waiting
@@ -60,22 +67,34 @@ class Submiter(object):
     def _nodes_check(self):
         _to_remove = []
         for (to_node, i, ind) in self.node_line:
-            if to_node.checking_input_el(ind):
-                self._submit_work_el(to_node, i, ind)
-                _to_remove.append((to_node, i, ind))
+            if i == "reduction":
+                if to_node.global_done: #have to check if interface has finished
+                    self.submit_redu_work(to_node)
+                    _to_remove.append((to_node, i, ind))
+                else:
+                    pass
             else:
-                pass
+                if to_node.checking_input_el(ind):
+                    self._submit_work_el(to_node, i, ind)
+                    _to_remove.append((to_node, i, ind))
+                else:
+                    pass
         # can't remove during iterating
         for rn in _to_remove:
             self.node_line.remove(rn)
         return self.node_line
+
 
     # this I believe can be done for entire node
     def _output_check(self):
         _to_remove = []
         for node in self._to_finish:
             if node.global_done:
-                _to_remove.append(node)
+                if node._reducer_interface:
+                    if node.global_done_red:
+                        _to_remove.append(node)
+                else:
+                    _to_remove.append(node)
         for rn in _to_remove:
             self._to_finish.remove(rn)
         return self._to_finish
@@ -85,6 +104,15 @@ class Submiter(object):
         for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
             self._submit_work_el(node, i, ind)
 
+
     def _submit_work_el(self, node, i, ind):
         logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
         self.worker.run_el(node.run_interface_el, (i, ind))
+
+
+    def submit_redu_work(self, node):
+        logger.debug("SUBMIT REDU WORKER, node: {}".format(node))
+        for (state_redu, res_redu) in node.result[node._reducer_interface_input]: # TODO, should be more general than out
+            res_redu_l = [i[1] for i in res_redu]
+            self.worker.run_el(node.run_interface_redu_el, (state_redu, res_redu_l))
+
