@@ -31,13 +31,24 @@ class Submiter(object):
             # submitting all the nodes who are self sufficient (self.graph is already sorted)
             if node.sufficient:
                 self.submit_work(node)
+                # adding task for reducer
+                if node._reducer_interface:
+                    #decided to add it as one task, since I have to wait for everyone before  can start it anyway
+                    self.node_line.append((node, "reduction", None))
             # if its not, its been added to a line
             else:
                 break
 
         # all nodes that are not self sufficient will go to the line
+        # iterating over all elements
         # (i think ordered list work well here, since it's more efficient to check within a specific order)
-        self.node_line = self.graph[i_n:]
+        for nn in self.graph[i_n:]:
+            for (i, ind) in enumerate(itertools.product(*nn.node_states._all_elements)):
+                self.node_line.append((nn, i, ind))
+            if nn._reducer_interface:
+                # decided to add it as one task, since I have to wait for everyone before  can start it anyway
+                self.node_line.append((nn, "reduction", None))
+
 
         # this parts submits nodes that are waiting to be run
         # it should stop when nothing is waiting
@@ -52,34 +63,56 @@ class Submiter(object):
             time.sleep(3)
 
 
+    # for now without callback, so checking all nodes(with ind) in some order
     def _nodes_check(self):
-        for to_node in self.node_line:
-            ready = True
-            for (from_node, from_socket, to_socket) in to_node.needed_outputs:
-                if from_node.global_done:
-                    try:
-                        self._to_finish.remove(from_node)
-                    except ValueError:
-                        pass
+        _to_remove = []
+        for (to_node, i, ind) in self.node_line:
+            if i == "reduction":
+                if to_node.global_done: #have to check if interface has finished
+                    self.submit_redu_work(to_node)
+                    _to_remove.append((to_node, i, ind))
                 else:
-                    ready = False
-                    break
-            if ready:
-                self.submit_work(to_node)
-                self.node_line.remove(to_node)
+                    pass
+            else:
+                if to_node.checking_input_el(ind):
+                    self._submit_work_el(to_node, i, ind)
+                    _to_remove.append((to_node, i, ind))
+                else:
+                    pass
+        # can't remove during iterating
+        for rn in _to_remove:
+            self.node_line.remove(rn)
         return self.node_line
 
 
+    # this I believe can be done for entire node
     def _output_check(self):
+        _to_remove = []
         for node in self._to_finish:
             if node.global_done:
-                self._to_finish.remove(node)
+                if node._reducer_interface:
+                    if node.global_done_red:
+                        _to_remove.append(node)
+                else:
+                    _to_remove.append(node)
+        for rn in _to_remove:
+            self._to_finish.remove(rn)
         return self._to_finish
 
 
     def submit_work(self, node):
-        node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
-                                        inp_ord_map=node._input_order_map)
         for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
-            logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
-            self.worker.run_el(node.run_interface_el, (i, ind))
+            self._submit_work_el(node, i, ind)
+
+
+    def _submit_work_el(self, node, i, ind):
+        logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
+        self.worker.run_el(node.run_interface_el, (i, ind))
+
+
+    def submit_redu_work(self, node):
+        logger.debug("SUBMIT REDU WORKER, node: {}".format(node))
+        for (state_redu, res_redu) in node.result[node._reducer_interface_input]: # TODO, should be more general than out
+            res_redu_l = [i[1] for i in res_redu]
+            self.worker.run_el(node.run_interface_redu_el, (state_redu, res_redu_l))
+

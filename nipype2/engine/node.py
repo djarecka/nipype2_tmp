@@ -17,6 +17,7 @@ import itertools
 import collections
 
 from . import state
+from .auxiliary import Function_Interface
 
 from .. import config, logging
 logger = logging.getLogger('workflow')
@@ -32,7 +33,8 @@ class FakeNode(object):
 class Node(object):
     """Defines common attributes and functions for workflows and nodes."""
 
-    def __init__(self, interface, name, mapper=None, reducer=None, reducer_interface=None,
+    def __init__(self, interface, name, mapper=None, reducer=None,
+                 reducer_fun_inp=None,
                  inputs=None, base_dir=None, plugin="mp"):
         """ Initialize base parameters of a workflow or node
 
@@ -46,8 +48,8 @@ class Node(object):
             mapper used with the interface
         reducer: string
             field used to group results
-        reducer_interface: Interface
-            interface used to reduce results
+        reducer_fun_inp: tuple
+            (function used for reduction, output from the main interface that should go to the function)
         name : string (mandatory)
             Name of this node. Name must be alphanumeric and not contain any
             special characters (e.g., '.', '@').
@@ -60,7 +62,11 @@ class Node(object):
         # contains variables from the state (original) variables
         self._state_mapper = self._mapper
         self._reducer = reducer
-        self._reducer_interface = reducer_interface
+        if reducer_fun_inp:
+            self._reducer_interface = Function_Interface(reducer_fun_inp[0], ["red_{}".format(reducer_fun_inp[1])])
+            self._reducer_interface_input = reducer_fun_inp[1]
+        else:
+            self._reducer_interface = None
         if inputs:
             self._inputs = inputs
             # extra input dictionary needed to save values of state inputs
@@ -81,14 +87,17 @@ class Node(object):
         self._input_order_map = {}
         self.sufficient = True
         self._result = {}
+        self._result_redu_interf = {}
         self.needed_outputs = []
         self.sending_output = [] # what should be send to another nodes
         if self._reducer is None:
             self._out_nm = self._interface._output_nm
         else:
-            raise Exception("have to finish...")
+            # TODO: has to be probably changed:
+            self._out_nm = self._interface._output_nm
         logger.debug('Initialize Node {}'.format(name))
         self._global_done = False # if all tasks are done (if mapper present, I'm checking for all state elements)
+        self._global_done_red = False # if reduction function is done
 
 
     @property
@@ -102,11 +111,12 @@ class Node(object):
 
     def _check_all_results(self):
         # checking if all files that should be created are present
-        # TODO: if reducer is present, that should be changed
         for ind in itertools.product(*self.node_states._all_elements):
             state_dict = self.node_states.state_values(ind)
             dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
-            os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
+            if self._reducer:
+                dir_red = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i in self._reducer])
+                dir_nm_el = os.path.join(dir_red, dir_nm_el)
             for key_out in self._out_nm:
                 if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
                     return False
@@ -115,16 +125,38 @@ class Node(object):
 
 
     @property
+    def global_done_red(self):
+        # once _global_done_red os True, this should not change
+        if self._global_done_red:
+            return self._global_done_red
+        else:
+            return self._check_all_results_red_interf()
+
+
+    def _check_all_results_red_interf(self):
+        # checking if all files that should be created are present
+        key_red_interf = self._reducer_interface_input
+        for (state_redu, res_redu) in self.result[key_red_interf]:
+            dir_red = "_".join(["{}.{}".format(i, j) for i, j in list(state_redu.items())])
+            if not os.path.isfile(os.path.join(self.nodedir, dir_red, "red_" + key_red_interf + ".txt")):
+                return False
+        return True
+
+
+    @property
     def result(self):
         if not self._result:
-            self._reading_results()
+            if self._reducer:
+                self._reading_results_reducer()
+            else:
+                self._reading_results()
         return self._result
+
 
     def _reading_results(self):
         """
         reading results from file,
         doesn't check if everything is ready, i.e. if self.global_done"""
-        # TODO: probably needs changes when reducer
         for key_out in self._out_nm:
             self._result[key_out] = []
             if self._state_inputs:
@@ -142,6 +174,54 @@ class Node(object):
                     self._result[key_out].append(({}, eval(fout.readline())))
 
 
+    # TODO: should be probably combine with _reading_results
+    def _reading_results_reducer(self):
+        """
+        reading results from file,
+        doesn't check if everything is ready, i.e. if self.global_done"""
+        for key_out in self._out_nm:
+            self._result[key_out] = []
+            dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
+            for ii, dir_red in enumerate(dir_red_l):
+                red_el = dir_red.split(os.sep)[-1].split("_")
+                red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                   for el in red_el])
+                self._result[key_out].append((red_dict, []))
+                files = [name for name in glob.glob("{}/*/{}.txt".format(dir_red, key_out))]
+                print("Red Dict",  red_dict, dir_red, files)
+                for file in files:
+                    st_el = file.split(os.sep)[-2].split("_")
+                    st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                            for el in st_el])
+                    with open(file) as fout:
+                        self._result[key_out][ii][1].append((st_dict, eval(fout.readline())))
+
+
+    # only if we ask for reduction interface
+    @property
+    def result_redu_interf(self):
+        if not self._reducer_interface:
+            raise Exception("don't have reducer interface, can't provide result_redu")
+        else:
+            if not self._result_redu_interf:
+                self._reading_results_redu_interf()
+        return self._result_redu_interf
+
+
+    def _reading_results_redu_interf(self):
+        """
+        reading results of red_interface from file,
+        #doesn't check if everything is ready, i.e. if self.global_done_red"""
+        self._result_redu_interf["red_{}".format(self._reducer_interface_input)] = []
+        dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
+        for ii, dir_red in enumerate(dir_red_l):
+            red_el = dir_red.split(os.sep)[-1].split("_")
+            red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                               for el in red_el])
+
+            file_redu = os.path.join(dir_red, "red_{}.txt".format(self._reducer_interface_input))
+            with open(file_redu) as fout:
+                self._result_redu_interf["red_{}".format(self._reducer_interface_input)].append((red_dict, eval(fout.readline())))
 
 
     @property
@@ -191,9 +271,37 @@ class Node(object):
 
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
-        logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
-        inputs_dict = self.node_states_inputs.state_values(ind)
+        #logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
+        state_dict, inputs_dict = self._collecting_input_el(ind)
+        logger.debug("Run interface el, name={}, inputs_dict={}, state_dict={}".format(
+                                                            self.name, inputs_dict, state_dict))
+        self._interface.run(inputs_dict)
+        output = self._interface.output
+        dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+        if self._reducer:
+            dir_red = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i in self._reducer])
+            os.makedirs(os.path.join(self.nodedir, dir_red), exist_ok=True)
+            dir_nm_el = os.path.join(dir_red, dir_nm_el)
+        os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
+        for key_out in list(output.keys()):
+            with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
+                fout.write(str(output[key_out]))
+
+    def run_interface_redu_el(self, state_dict, input_list):
+        """ running interface one element for redu_interface."""
+        logger.debug("Run redu interface el, name={}, state_dict={}".format(
+            self.name, state_dict))
+        self._reducer_interface.run({"mylist":input_list})
+        output = self._reducer_interface.output
+        #print("OUTPUT", output)
+        dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+        key_red_interf = self._reducer_interface_input
+        with open(os.path.join(self.nodedir, dir_nm_el, "red_" + key_red_interf + ".txt"), "w") as fout:
+            fout.write(str(output["red_out"]))
+
+    def _collecting_input_el(self, ind):
         state_dict = self.node_states.state_values(ind)
+        inputs_dict = {k: state_dict[k] for k in self._inputs.keys()}
         # reading extra inputs that come from previous nodes
         for (from_node, from_socket, to_socket) in self.needed_outputs:
             dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
@@ -201,21 +309,20 @@ class Node(object):
             file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
             with open(file_from) as f:
                 inputs_dict[to_socket] = eval(f.readline())
+        return state_dict, inputs_dict
 
-        self._interface.run(inputs_dict)
-        output = self._interface.output
-        dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
-        os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
-        for key_out in list(output.keys()):
-            with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
-                fout.write(str(output[key_out]))
+    def checking_input_el(self, ind):
+        try:
+            self._collecting_input_el(ind)
+            return True
+        except: #TODO specify
+            return False
 
 
     def preparing_node(self):
         # adding directory (should have workflowdir already)
         self.nodedir = os.path.join(self.wfdir, self.fullname)
         os.makedirs(self.nodedir, exist_ok=True)
-
         self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
 
 

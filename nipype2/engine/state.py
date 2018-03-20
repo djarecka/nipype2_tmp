@@ -2,6 +2,7 @@ import numpy as np
 import itertools
 from collections import namedtuple
 import pdb
+from collections import OrderedDict
 
 from . import auxiliary as aux
 
@@ -76,8 +77,6 @@ class State(object):
 
 
     def state_values(self, ind):
-
-        from collections import OrderedDict
         if len(ind) > self._ndim:
             raise IndexError("too many indices")
 
