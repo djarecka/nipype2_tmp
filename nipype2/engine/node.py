@@ -32,8 +32,9 @@ class FakeNode(object):
 class Node(object):
     """Defines common attributes and functions for workflows and nodes."""
 
-    def __init__(self, interface, name, mapper=None, reducer=None, reducer_interface=None,
-                 inputs=None, base_dir=None, plugin="mp"):
+    def __init__(self, interface, name, inputs=None, mapper=None,
+                 join=False, joinByKey=None, join_interface=None,
+                 base_dir=None, plugin="mp"):
         """ Initialize base parameters of a workflow or node
 
         Parameters
@@ -44,10 +45,12 @@ class Node(object):
             inputs fields
         mapper: string, tuple (for scalar) or list (for outer product)
             mapper used with the interface
-        reducer: string
-            field used to group results
-        reducer_interface: Interface
-            interface used to reduce results
+        join: Bool
+            joining all elements (after mapping) together
+        joinByKey: list
+            list of fields will be used for joining
+        join_interface: Interface
+            interface used to reduce results after join operation
         name : string (mandatory)
             Name of this node. Name must be alphanumeric and not contain any
             special characters (e.g., '.', '@').
@@ -59,8 +62,10 @@ class Node(object):
         self._mapper = mapper
         # contains variables from the state (original) variables
         self._state_mapper = self._mapper
-        self._reducer = reducer
-        self._reducer_interface = reducer_interface
+        self._join = join
+        self._joinByKey = joinByKey
+
+        self._join_interface = join_interface
         if inputs:
             self._inputs = inputs
             # extra input dictionary needed to save values of state inputs
@@ -83,10 +88,8 @@ class Node(object):
         self._result = {}
         self.needed_outputs = []
         self.sending_output = [] # what should be send to another nodes
-        if self._reducer is None:
-            self._out_nm = self._interface._output_nm
-        else:
-            raise Exception("have to finish...")
+        # TODO: should I change it for join
+        self._out_nm = self._interface._output_nm
         logger.debug('Initialize Node {}'.format(name))
         self._global_done = False # if all tasks are done (if mapper present, I'm checking for all state elements)
 
@@ -106,7 +109,9 @@ class Node(object):
         for ind in itertools.product(*self.node_states._all_elements):
             state_dict = self.node_states.state_values(ind)
             dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
-            os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
+            if self._joinByKey:
+                dir_red = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i not in self._joinByKey])
+                dir_nm_el = os.path.join(dir_red, dir_nm_el)
             for key_out in self._out_nm:
                 if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
                     return False
@@ -117,7 +122,10 @@ class Node(object):
     @property
     def result(self):
         if not self._result:
-            self._reading_results()
+            if self._joinByKey:
+                self._reading_results_join()
+            else:
+                self._reading_results()
         return self._result
 
     def _reading_results(self):
@@ -142,7 +150,37 @@ class Node(object):
                     self._result[key_out].append(({}, eval(fout.readline())))
 
 
-
+    # TODO: should be probably combine with _reading_results
+    def _reading_results_join(self):
+        """
+        reading results from file,
+        doesn't check if everything is ready, i.e. if self.global_done"""
+        # TODO: probably needs changes when reducer
+        for key_out in self._out_nm:
+            self._result[key_out] = []
+            dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
+            print("DIR RED L", dir_red_l)
+            for ii, dir_red in enumerate(dir_red_l):
+                #to zmienic, wywalic _ i
+                red_el = dir_red.split(os.sep)[-1].split("_")[1:]
+                print("RED EL", red_el)
+                if red_el and red_el[0]:
+                    red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                       for el in red_el])
+                else:
+                    red_dict = {}
+                print("RED EL 2", red_el, red_dict)
+                self._result[key_out].append((red_dict, []))
+                #pdb.set_trace()
+                files = [name for name in glob.glob("{}/*/{}.txt".format(dir_red, key_out))]
+                print("FILES", files)
+                for file in files:
+                    st_el = file.split(os.sep)[-2].split("_")
+                    st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                            for el in st_el])
+                    with open(file) as fout:
+                        self._result[key_out][ii][1].append((st_dict, eval(fout.readline())))
+                    print("RESULT", key_out, self._result[key_out])
 
     @property
     def inputs(self):
@@ -198,6 +236,11 @@ class Node(object):
         self._interface.run(inputs_dict)
         output = self._interface.output
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+        if self._joinByKey:
+            print("JOIN", self._joinByKey)
+            dir_join = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i not in self._joinByKey])
+            os.makedirs(os.path.join(self.nodedir, dir_join), exist_ok=True)
+            dir_nm_el = os.path.join(dir_join, dir_nm_el)
         os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
