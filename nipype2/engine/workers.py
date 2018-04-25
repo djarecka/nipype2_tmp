@@ -26,3 +26,9 @@ class MpWorker(object):
         self.pool.apply_async(interface, (inp[0], inp[1]))
 
 
+    def close_pool(self):
+        # added this method since I was having somtetimes problem with reading results from (existing) files
+        # i thought that pool.close() should work, but still was getting some errors, so testing terminate
+        self.pool.terminate()
+
+

@@ -105,4 +105,4 @@ class Workflow(object):
         self._preparing()
         sub = Submiter(self.graph_sorted, plugin=self.plugin)
         sub.run_workflow()
-
+        sub.close()

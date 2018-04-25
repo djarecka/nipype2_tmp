@@ -88,3 +88,7 @@ class Submiter(object):
     def _submit_work_el(self, node, i, ind):
         logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
         self.worker.run_el(node.run_interface_el, (i, ind))
+
+    def close(self):
+        if self.plugin == "mp":
+            self.worker.close_pool()
