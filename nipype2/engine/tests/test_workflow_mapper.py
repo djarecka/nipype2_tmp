@@ -9,6 +9,7 @@ from ..auxiliary import Function_Interface
 from ... import config, logging
 config.enable_debug_mode()
 logging.update_logging(config)
+logger = logging.getLogger('workflow')
 
 def funA(a):
     print("A Before Waiting")
@@ -48,11 +49,12 @@ def test_workflow_mapper_1():
 
     expected = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25),
                 ({"a": 6}, 36), ({"a": 7}, 49), ({"a": 8}, 64)]
+    logger.debug("TEST, result['out']={}".format(nA.result["out"]))
     for i, res in enumerate(expected):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
-
+# TODO czesto sie wywala
 def test_workflow_mapper_1a():
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5]), "d2": np.array([10, 20, 30])}, mapper=("d1", "d2"),
@@ -63,6 +65,7 @@ def test_workflow_mapper_1a():
     wf.run()
 
     expected = [({"d1":3, "d2": 10}, 13), ({"d1":4, "d2":20}, 24), ({"d1":5, "d2":30}, 35)]
+    logger.debug("TEST, result['out']={}".format(nD.result["out"]))
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
@@ -80,6 +83,8 @@ def test_workflow_mapper_2():
     wf = Workflow(nodes=[nA, nB], name="workflow_2", workingdir="test_mapper_2")
     wf.run()
 
+    logger.debug("TEST, nA.result['out']={}".format(nA.result["out"]))
+    logger.debug("TEST, nB.result['out']={}".format(nB.result["out"]))
     expected = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25),
                 ({"a": 6}, 36), ({"a": 7}, 49), ({"a": 8}, 64)]
     for i, res in enumerate(expected):
@@ -102,12 +107,14 @@ def test_workflow_mapper_3():
     wf.connect(nA, "out", nC, "c")
     wf.run()
 
+    logger.debug("TEST, nA.result['out']={}".format(nA.result["out"]))
     expected_A = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25),
                  ({"a": 6}, 36), ({"a": 7}, 49), ({"a": 8}, 64)]
     for i, res in enumerate(expected_A):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
+    logger.debug("TEST, nC.result['out']={}".format(nC.result["out"]))
     expected_C = [({"a": 3}, 90), ({"a": 4}, 160), ({"a": 5}, 250),
                   ({"a": 6}, 360), ({"a": 7}, 490), ({"a": 8}, 640)]
     for i, res in enumerate(expected_C):
@@ -128,11 +135,13 @@ def test_workflow_mapper_4():
     wf.connect(nA, "out", nD, "d2")
     wf.run()
 
+    logger.debug("TEST, nA.result['out']={}".format(nA.result["out"]))
     expected_A = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25)]
     for i, res in enumerate(expected_A):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
+    logger.debug("TEST, nD.result['out']={}".format(nD.result["out"]))
     expected_D = [({"a":3, "d1":10}, 19), ({"a":4, "d1":20}, 36), ({"a":5, "d1":30}, 55)]
     for i, res in enumerate(expected_D):
         assert nD.result["out"][i][0] == res[0]

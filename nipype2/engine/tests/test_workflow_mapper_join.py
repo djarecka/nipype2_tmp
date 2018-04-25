@@ -52,7 +52,6 @@ def test_workflow_join_1():
             assert nA.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.skip(True, reason="jon=True not implemented")
 def test_workflow_join_1a():
     """graph: A; should be the same as 1"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
@@ -116,7 +115,7 @@ def test_workflow_join_2a():
             assert nD.result["out"][i][1][j][0] == res_el[0]
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
-@pytest.mark.skip(True, reason="jon=True not implemented")
+
 def test_workflow_join_2b():
     """graph: D; scalar mapper; it will be exactly the same output as 2"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])}, mapper=("d1", "d2"),
@@ -126,12 +125,15 @@ def test_workflow_join_2b():
     wf = Workflow(nodes=[nD], name="workflow_2b", workingdir="test_join_2b")
     wf.run()
 
-    expected = [({"d1":3, "d2":10}, 13), ({"d1":4, "d2":20}, 24),
-                ({"d1":5, "d2":30}, 35), ({"d1":3, "d2":40}, 43)]
+    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":40}, 43), #the order like in 2
+                      ({"d1":4, "d2":20}, 24), ({"d1":5, "d2":30}, 35)])]
 
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
-        assert nD.result["out"][i][1] == res[1]
+        for j, res_el in enumerate(res[1]):
+            assert nD.result["out"][i][1][j][0] == res_el[0]
+            assert nD.result["out"][i][1][j][1] == res_el[1]
+
 
 
 def test_workflow_join_3():
@@ -240,7 +242,6 @@ def test_workflow_join_4c():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.skip(True, reason="jon=True not implemented")
 def test_workflow_join_4d():
     """graph: D; mapper: vector; using join=True - output: flat array (the same as 4c) """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
@@ -250,9 +251,11 @@ def test_workflow_join_4d():
     wf = Workflow(nodes=[nD], name="workflow_4d", workingdir="test_join_4d")
     wf.run()
 
-    expected = [({"d1":3, "d2":10}, 13), ({"d1":4, "d2":10}, 14),
-                ({"d1":3, "d2":20}, 23), ({"d1":4, "d2":20}, 24)]
+    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":20}, 23),
+                      ({"d1":4, "d2":10}, 14), ({"d1":4, "d2":20}, 24)])] # the same order as 4b
 
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
-        assert nD.result["out"][i][1] == res[1]
+        for j, res_el in enumerate(res[1]):
+            assert nD.result["out"][i][1][j][0] == res_el[0]
+            assert nD.result["out"][i][1][j][1] == res_el[1]

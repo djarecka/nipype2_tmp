@@ -62,6 +62,8 @@ class Node(object):
         self._mapper = mapper
         # contains variables from the state (original) variables
         self._state_mapper = self._mapper
+        if join and joinByKey:
+            raise Exception("you cant have join and joinByKey at the same time")
         self._join = join
         self._joinByKey = joinByKey
 
@@ -112,6 +114,8 @@ class Node(object):
             if self._joinByKey:
                 dir_red = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i not in self._joinByKey])
                 dir_nm_el = os.path.join(dir_red, dir_nm_el)
+            elif self._join:
+                dir_nm_el = os.path.join("joinAll", dir_nm_el)
             for key_out in self._out_nm:
                 if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
                     return False
@@ -122,7 +126,7 @@ class Node(object):
     @property
     def result(self):
         if not self._result:
-            if self._joinByKey:
+            if self._joinByKey or self._join:
                 self._reading_results_join()
             else:
                 self._reading_results()
@@ -142,6 +146,7 @@ class Node(object):
                     st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
                                                             for el in st_el])
                     with open(file) as fout:
+                        logger.debug('Reading Results: file={}, st_dict={}'.format(file, st_dict))
                         self._result[key_out].append((st_dict, eval(fout.readline())))
             # for nodes without input
             else:
@@ -159,21 +164,17 @@ class Node(object):
         for key_out in self._out_nm:
             self._result[key_out] = []
             dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
-            print("DIR RED L", dir_red_l)
             for ii, dir_red in enumerate(dir_red_l):
                 #to zmienic, wywalic _ i
                 red_el = dir_red.split(os.sep)[-1].split("_")[1:]
-                print("RED EL", red_el)
                 if red_el and red_el[0]:
                     red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
                                                        for el in red_el])
                 else:
                     red_dict = {}
-                print("RED EL 2", red_el, red_dict)
                 self._result[key_out].append((red_dict, []))
                 #pdb.set_trace()
                 files = [name for name in glob.glob("{}/*/{}.txt".format(dir_red, key_out))]
-                print("FILES", files)
                 for file in files:
                     st_el = file.split(os.sep)[-2].split("_")
                     st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
@@ -235,10 +236,13 @@ class Node(object):
                                                             self.name, inputs_dict, state_dict))
         self._interface.run(inputs_dict)
         output = self._interface.output
+        logger.debug("Run interface el, output={}".format(output))
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
         if self._joinByKey:
-            print("JOIN", self._joinByKey)
             dir_join = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i not in self._joinByKey])
+        elif self._join:
+            dir_join = "joinAll"
+        if self._joinByKey or self._join:
             os.makedirs(os.path.join(self.nodedir, dir_join), exist_ok=True)
             dir_nm_el = os.path.join(dir_join, dir_nm_el)
         os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
