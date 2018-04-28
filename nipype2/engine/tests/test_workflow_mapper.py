@@ -54,7 +54,7 @@ def test_workflow_mapper_1():
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
-# TODO czesto sie wywala
+
 def test_workflow_mapper_1a():
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5]), "d2": np.array([10, 20, 30])}, mapper=("d1", "d2"),
