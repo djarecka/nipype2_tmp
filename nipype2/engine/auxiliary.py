@@ -57,7 +57,6 @@ def mapping_axis(state_inputs, mapper_rpn):
                     raise Exception("arrays for scalar operations should have the same size")
 
             else:
-                #pdb.set_trace()
                 if state_inputs[right].shape == state_inputs[left].shape:
                     current_axis = list(range(state_inputs[right].ndim))
                     current_shape = state_inputs[left].shape
@@ -78,8 +77,7 @@ def mapping_axis(state_inputs, mapper_rpn):
                 current_shape = tuple([i for i in current_shape + state_inputs[right].shape])
             elif right == "OUT":
                 for key in axis_for_input:
-                    #pdb.set_trace()
-                    axis_for_input[key] = [i + state_inputs[left].ndim for i 
+                    axis_for_input[key] = [i + state_inputs[left].ndim for i
                                            in axis_for_input[key]]
 
                 axis_for_input[left] = [i-len(current_shape) + current_axis[-1] +1 for i 
@@ -107,13 +105,11 @@ def mapping_axis(state_inputs, mapper_rpn):
         current_axis = [i for i in range(state_inputs[stack[0]].ndim)]
         axis_for_input[stack[0]] = current_axis
 
-    #print("axis", axis_for_input)
     if current_axis:
         ndim = max(current_axis) + 1
     else:
         ndim = 0
     return axis_for_input, ndim
-
 
 
 def converting_axis2input(state_inputs, axis_for_input, ndim):
@@ -139,6 +135,7 @@ class Function_Interface(object):
         else:
             raise Exception("output_nm should be a list")
         self.input_map = input_map
+
 
     def run(self, input):
         self.output = {}

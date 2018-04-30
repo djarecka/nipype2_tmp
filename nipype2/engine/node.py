@@ -9,12 +9,10 @@ from builtins import object
 from future import standard_library
 standard_library.install_aliases()
 
-from copy import deepcopy
-import re, os, time, pdb, glob
-import numpy as np
-import networkx as nx
+import re, os, glob
 import itertools
 import collections
+import pdb
 
 from . import state
 from .auxiliary import Function_Interface
@@ -22,12 +20,6 @@ from .auxiliary import Function_Interface
 from .. import config, logging
 logger = logging.getLogger('workflow')
 
-
-class FakeNode(object):
-    def __init__(self):
-        self.a = 3
-    def print(self):
-        print("FAKE NODE!!!!!")
 
 
 class Node(object):
@@ -61,9 +53,9 @@ class Node(object):
             default=None, which results in the use of mkdtemp
 
         """
-        self._mapper = mapper
+        #self._mapper = mapper # not used?
         # contains variables from the state (original) variables
-        self._state_mapper = self._mapper
+        self.state_mapper = mapper
         if join and joinByKey:
             raise Exception("you cant have join and joinByKey at the same time")
         self._join = join
@@ -79,10 +71,10 @@ class Node(object):
         if inputs:
             self._inputs = inputs
             # extra input dictionary needed to save values of state inputs
-            self._state_inputs = self._inputs.copy()
+            self.state_inputs = self._inputs.copy()
         else:
             self._inputs = {}
-            self._state_inputs = {}
+            self.state_inputs = {}
 
         self._interface = interface
         self.base_dir = base_dir
@@ -93,7 +85,6 @@ class Node(object):
         self._id = self.name
         self._hierarchy = None
         self.plugin = plugin
-        self._input_order_map = {}
         self.sufficient = True
         self._result = {}
         self._result_join_interf = {}
@@ -109,6 +100,7 @@ class Node(object):
     @property
     def global_done(self):
         # once _global_done os True, this should not change
+        logger.debug('global_done {}'.format(self._global_done))
         if self._global_done:
             return self._global_done
         else:
@@ -136,7 +128,7 @@ class Node(object):
     @property
     def global_done_join(self):
         # once _global_done_join is True, this should not change
-        print("GLOBAL DONE JOIN",self._global_done_join )
+        logger.debug('global_done {}'.format(self._global_done_join))
         if self._global_done_join:
             return self._global_done_join
         else:
@@ -149,11 +141,8 @@ class Node(object):
         for (state_redu, res_redu) in self.result[key_red_interf]:
             dir_red = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_redu.items())])
             if not os.path.isfile(os.path.join(self.nodedir, dir_red, "red_" + key_red_interf + ".txt")):
-                print("CHECK ALL JOIN FALSE", os.path.join(self.nodedir, dir_red, "red_" + key_red_interf + ".txt"))
                 return False
         return True
-
-
 
 
     @property
@@ -165,14 +154,14 @@ class Node(object):
                 self._reading_results()
         return self._result
 
+
     def _reading_results(self):
         """
         reading results from file,
         doesn't check if everything is ready, i.e. if self.global_done"""
-        # TODO: probably needs changes when reducer
         for key_out in self._out_nm:
             self._result[key_out] = []
-            if self._state_inputs:
+            if self.state_inputs:
                 files = [name for name in glob.glob("{}/*/{}.txt".format(self.nodedir, key_out))]
                 for file in files:
                     st_el = file.split(os.sep)[-2].split("_")
@@ -193,7 +182,6 @@ class Node(object):
         """
         reading results from file,
         doesn't check if everything is ready, i.e. if self.global_done"""
-        # TODO: probably needs changes when reducer
         for key_out in self._out_nm:
             self._result[key_out] = []
             dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
@@ -235,21 +223,16 @@ class Node(object):
         # TODO red_{}.txt powinno byc gdzies indziej, nie wiem dlaczego jest w glownym
         self._result_join_interf["red_{}".format(self._join_interface_input)] = []
         dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
-        print("_reading_results_join DIR RED L", dir_red_l)
+        logger.debug("_reading_results_join DIR RED L {}".format( dir_red_l))
         for ii, dir_red in enumerate(dir_red_l):
-            #print("DIR RED", dir_red)
             red_el = dir_red.split(os.sep)[-1].split("_")
-            #print("RED EL", red_el)
             try:
                 red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
                                                    for el in red_el[1:]])
             except IndexError:
                 red_dict = {}
-
-            #file_redu = dir_red
             file_redu = os.path.join(dir_red,"red_{}.txt".format(self._join_interface_input))
             with open(file_redu) as fout:
-                #print("FOUT", eval(fout.readline()))
                 self._result_join_interf["red_{}".format(self._join_interface_input)].append((red_dict, eval(fout.readline())))
 
 
@@ -257,13 +240,12 @@ class Node(object):
     def inputs(self):
         """Return the inputs of the underlying interface"""
         #return self._interface.inputs
-        # dj: temporary will use self._inputs
         return self._inputs
 
     @inputs.setter
     def inputs(self, inputs):
         self._inputs = inputs
-        self._state_inputs = self._inputs.copy()
+        self.state_inputs = self._inputs.copy()
 
 
     @property
@@ -271,10 +253,12 @@ class Node(object):
         """Return the output fields of the underlying interface"""
         return self._interface._outputs()
 
+
     @property
     def interface(self):
         """Return the underlying interface object"""
         return self._interface
+
 
     @property
     def fullname(self):
@@ -300,7 +284,7 @@ class Node(object):
 
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
-        #logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
+        logger.debug("Run interface el, name={}, i={}, ind={}".format(self.name, i, ind))
         state_dict, inputs_dict = self._collecting_input_el(ind)
         logger.debug("Run interface el, name={}, inputs_dict={}, state_dict={}".format(
                                                             self.name, inputs_dict, state_dict))
@@ -325,15 +309,13 @@ class Node(object):
         """ running interface one element for join_interface."""
         logger.debug("Run join interface el, name={}, state_dict={}".format(
             self.name, state_dict))
-        self._join_interface.run({"mylist":input_list})
+        self._join_interface.run({"mylist":input_list}) # should have a user specified name
         output = self._join_interface.output
-        #print("OUTPUT", output)
         dir_nm_el = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
         key_red_interf = self._join_interface_input
         logger.debug("Run join interface el, FileName={}".format(os.path.join(self.nodedir, dir_nm_el, "red_" + key_red_interf + ".txt")))
         with open(os.path.join(self.nodedir, dir_nm_el, "red_" + key_red_interf + ".txt"), "w") as fout:
             fout.write(str(output["red_out"]))
-
 
 
     def _collecting_input_el(self, ind):
@@ -342,7 +324,7 @@ class Node(object):
         # reading extra inputs that come from previous nodes
         for (from_node, from_socket, to_socket) in self.needed_outputs:
             dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
-                                       if i in list(from_node._state_inputs.keys())])
+                                       if i in list(from_node.state_inputs.keys())])
             file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
             with open(file_from) as f:
                 inputs_dict[to_socket] = eval(f.readline())
@@ -360,6 +342,6 @@ class Node(object):
         # adding directory (should have workflowdir already)
         self.nodedir = os.path.join(self.wfdir, self.fullname)
         os.makedirs(self.nodedir, exist_ok=True)
-        self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
+        self.node_states = state.State(state_inputs=self.state_inputs, mapper=self.state_mapper)
 
 

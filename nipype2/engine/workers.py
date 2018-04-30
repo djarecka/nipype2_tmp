@@ -30,5 +30,3 @@ class MpWorker(object):
         # added this method since I was having somtetimes problem with reading results from (existing) files
         # i thought that pool.close() should work, but still was getting some errors, so testing terminate
         self.pool.terminate()
-
-

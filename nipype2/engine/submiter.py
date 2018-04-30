@@ -26,28 +26,29 @@ class Submiter(object):
         logger.debug('Initialize Submitter, graph: {}'.format(graph))
         self._to_finish = list(self.graph)
 
+
     def run_workflow(self):
         for (i_n, node) in enumerate(self.graph):
             # submitting all the nodes who are self sufficient (self.graph is already sorted)
             if node.sufficient:
                 self.submit_work(node)
+            # if its not, its been added to a line
+            else:
+                break
             # adding task for reducer
             if node._join_interface:
                 # decided to add it as one task, since I have to wait for everyone before  can start it anyway
                 self.node_line.append((node, "join", None))
 
-            # if its not, its been added to a line
-            else:
-                break
 
         # all nodes that are not self sufficient will go to the line
         # iterating over all elements
         # (i think ordered list work well here, since it's more efficient to check within a specific order)
         for nn in self.graph[i_n:]:
-            for (i, ind) in enumerate(itertools.product(*nn.node_states._all_elements)):
+            for (i, ind) in enumerate(itertools.product(*nn.node_states.all_elements)):
                 self.node_line.append((nn, i, ind))
             if nn._join_interface:
-                # decided to add it as one task, since I have to wait for everyone before  can start it anyway
+                # decided to add it as one task, since I have to wait for everyone before can start it anyway
                 self.node_line.append((nn, "join", None))
 
 
@@ -85,6 +86,7 @@ class Submiter(object):
             self.node_line.remove(rn)
         return self.node_line
 
+
     # this I believe can be done for entire node
     def _output_check(self):
         _to_remove = []
@@ -92,7 +94,6 @@ class Submiter(object):
             print("_output check node", node,node.global_done, node._join_interface, node._global_done_join )
             if node.global_done:
                 if node._join_interface:
-                    print("W IFFFF")
                     if node.global_done_join:
                         _to_remove.append(node)
                 else:
@@ -103,7 +104,7 @@ class Submiter(object):
 
 
     def submit_work(self, node):
-        for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
+        for (i, ind) in enumerate(itertools.product(*node.node_states.all_elements)):
             self._submit_work_el(node, i, ind)
 
     def _submit_work_el(self, node, i, ind):

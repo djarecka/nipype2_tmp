@@ -67,25 +67,24 @@ class Workflow(object):
             try:
                 for inp, (out_node, out_var) in self.connected_var[nn].items():
                     nn.sufficient = False #it has some history (doesnt have to be in the loop)
-                    nn._state_inputs.update(out_node._state_inputs)
+                    nn.state_inputs.update(out_node.state_inputs)
                     nn.needed_outputs.append((out_node, out_var, inp))
                     #if there is no mapper provided, i'm assuming that mapper is taken from the previous node
-                    if (not nn._state_mapper or nn._state_mapper == out_node._state_mapper) and out_node._state_mapper:
-                        #pdb.set_trace()
-                        nn._state_mapper = out_node._state_mapper
-                        nn._mapper = inp
-                    elif not out_node._state_mapper: # we shouldn't change anything
+                    if (not nn.state_mapper or nn.state_mapper == out_node.state_mapper) and out_node.state_mapper:
+                        nn.state_mapper = out_node.state_mapper
+                        #nn._mapper = inp #not used
+                    elif not out_node.state_mapper: # we shouldn't change anything
                         pass
                     # when the mapper from previous node is used in the current node (it has to be the same syntax)
-                    elif nn._state_mapper and out_node._state_mapper in nn._state_mapper:  # _state_mapper or _mapper?? TODO
+                    elif nn.state_mapper and out_node.state_mapper in nn.state_mapper:  # state_mapper or _mapper?? TODO
                         #dj: if I use the syntax with state_inp name than I don't have to change the mapper...
                         #if type(nn._mapper) is tuple:
-                        #    nn._mapper = tuple([inp if x == out_node._state_mapper else x for x in list(nn._mapper)])
+                        #    nn._mapper = tuple([inp if x == out_node.state_mapper else x for x in list(nn._mapper)])
                         # TODO: not sure if I'll have to implement more
                         pass
 
                     #TODO: implement inner mapper
-                    elif  nn._state_mapper and inp in nn._state_mapper:
+                    elif  nn.state_mapper and inp in nn.state_mapper:
                         raise Exception("{} can be in the mapper only together with {}, i.e. {})".format(inp, out[1],
                                                                                                         [out[1], inp]))
                     else:
@@ -95,10 +94,7 @@ class Workflow(object):
                 # tmp: we don't care about nn that are not in self.connected_var
                 pass
 
-
-
             nn.preparing_node()
-
 
 
     def run(self):

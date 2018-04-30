@@ -44,25 +44,25 @@ class State(object):
             key = (key,)
         return self.state_values(key)
 
+    # not used?
+    #@property
+    #def input_for_axis(self):
+    #    return self._input_for_axis
 
-    @property
-    def input_for_axis(self):
-        return self._input_for_axis
-
-
-    @property
-    def axis_for_input(self):
-        return self._axis_for_input
+    # not used?
+    #@property
+    #def axis_for_input(self):
+    #    return self._axis_for_input
 
 
     @property
     def all_elements(self):
         return self._all_elements
 
-
-    @property
-    def mapper(self):
-        return self._mapper
+    # not used?
+    #@property
+    #def mapper(self):
+    #    return self._mapper
 
 
     @property
