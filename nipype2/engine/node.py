@@ -27,7 +27,7 @@ class Node(object):
 
     def __init__(self, interface, name, inputs=None, mapper=None,
                  join=False, joinByKey=None, join_fun_inp=None,
-                 base_dir=None, plugin="mp"):
+                 base_dir=None):
         """ Initialize base parameters of a workflow or node
 
         Parameters
@@ -84,7 +84,6 @@ class Node(object):
         # for compatibility with node expansion using iterables
         self._id = self.name
         self._hierarchy = None
-        self.plugin = plugin
         self.sufficient = True
         self._result = {}
         self._result_join_interf = {}

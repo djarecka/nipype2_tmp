@@ -40,12 +40,13 @@ def test_workflow_basic_1(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin=plugin)
+              name="nB")
 
-    wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="test_1")
+    wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="{}_test_1".format(plugin),
+                  plugin=plugin)
     wf.run()
 
     assert nA.result["out"][0][0] == {"a":5}
@@ -60,14 +61,15 @@ def test_workflow_basic_2(plugin):
     """graph: A -> C, B"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin=plugin)
+              name="nB")
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin=plugin)
+              name="nC")
 
-    wf = Workflow(nodes=[nA, nB, nC], name="workflow_2", workingdir="test_2")
+    wf = Workflow(nodes=[nA, nB, nC], name="workflow_2",
+                  workingdir="{}_test_2".format(plugin), plugin=plugin)
     wf.connect(nA, "out", nC, "c")
     wf.run()
 
@@ -86,22 +88,23 @@ def test_workflow_basic_3(plugin):
     """graph: A -> C, A -> D,  B -> D, C -> E, D -> E, F"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin=plugin)
+              name="nB")
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin=plugin)
+              name="nC")
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin=plugin)
+              name="nD")
     nE = Node(interface=Function_Interface(funE, ["out"]),
-              name="nE", plugin=plugin)
+              name="nE")
     nF = Node(interface=Function_Interface(funF, ["out"]),
-              name="nF", plugin=plugin)
+              name="nF")
 
 
 
-    wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_3", workingdir="test_3")
+    wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_3",
+                  workingdir="{}_test_3".format(plugin), plugin=plugin)
     wf.connect(nA, "out", nC, "c")
     wf.connect(nA, "out", nD, "d1")
     wf.connect(nB, "out", nD, "d2")

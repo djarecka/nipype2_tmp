@@ -44,9 +44,10 @@ def test_workflow_reducer_interf_1(plugin):
               mapper="a", joinByKey=["a"],
               interface=Function_Interface(funA, ["out"]),
               join_fun_inp=(fun_sum, "out"),
-              name="nA", plugin=plugin)
+              name="nA")
 
-    wf = Workflow(nodes=[nA], name="workflow_1", workingdir="test_reducer_interf_1")
+    wf = Workflow(nodes=[nA], name="workflow_1",
+                  workingdir="{}_test_reducer_interf_1".format(plugin), plugin=plugin)
     wf.run()
 
     expected = [({}, [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25)])]
@@ -69,9 +70,10 @@ def test_workflow_reducer_interf_1a(plugin):
               mapper="a", join=True,
               interface=Function_Interface(funA, ["out"]),
               join_fun_inp=(fun_sum, "out"),
-              name="nA", plugin=plugin)
+              name="nA")
 
-    wf = Workflow(nodes=[nA], name="workflow_1a", workingdir="test_reducer_interf_1a")
+    wf = Workflow(nodes=[nA], name="workflow_1a",
+                  workingdir="{}_test_reducer_interf_1a".format(plugin), plugin=plugin)
     wf.run()
 
     expected = [({}, [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25)])]
@@ -93,9 +95,10 @@ def test_workflow_reducer_interf_2(plugin):
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               joinByKey=["d2"], join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin=plugin)
+              name="nD")
 
-    wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_reducer_interf_2")
+    wf = Workflow(nodes=[nD], name="workflow_1a",
+                  workingdir="{}_test_reducer_interf_2".format(plugin), plugin=plugin)
     wf.run()
 
     expected = [({"d1":3}, [({"d1":3, "d2": 10}, 13), ({"d1":3, "d2": 40}, 43)]),
@@ -117,9 +120,10 @@ def test_workflow_reducer_interf_2a(plugin):
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               joinByKey=["d1"], join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin=plugin)
+              name="nD")
 
-    wf = Workflow(nodes=[nD], name="workflow_2a", workingdir="test_reducer_interf_2a")
+    wf = Workflow(nodes=[nD], name="workflow_2a",
+                  workingdir="{}_test_reducer_interf_2a".format(plugin), plugin=plugin)
     wf.run()
 
     expected = [({"d2":10}, [({"d1":3, "d2":10}, 13)]),
@@ -142,9 +146,10 @@ def test_workflow_reducer_interf_2b(plugin):
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               joinByKey=["d1", "d2"], join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin=plugin)
+              name="nD")
 
-    wf = Workflow(nodes=[nD], name="workflow_2b", workingdir="test_reducer_interf_2b")
+    wf = Workflow(nodes=[nD], name="workflow_2b",
+                  workingdir="{}_test_reducer_interf_2b".format(plugin), plugin=plugin)
     wf.run()
 
     # TODO: not sure if the order is "correct"...
@@ -166,9 +171,10 @@ def test_workflow_reducer_interf_2c(plugin):
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               join=True, join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin=plugin)
+              name="nD")
 
-    wf = Workflow(nodes=[nD], name="workflow_2c", workingdir="test_reducer_interf_2c")
+    wf = Workflow(nodes=[nD], name="workflow_2c",
+                  workingdir="{}_test_reducer_interf_2c".format(plugin), plugin=plugin)
     wf.run()
 
     # TODO: not sure if the order is "correct"...
@@ -189,14 +195,15 @@ def test_workflow_reducer_interf_3(plugin):
     """graph: A -> D"""
     nA = Node(inputs={"a": np.array([3, 4, 3])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nD = Node(inputs={"d1": np.array([10, 20, 30])},
               mapper=("a", "d1"), joinByKey=["d1"],
               join_fun_inp=(fun_sum, "out"),
               interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin=plugin)
+              name="nD")
 
-    wf = Workflow(nodes=[nA, nD], name="workflow_4", workingdir="test_reducer_interf_3")
+    wf = Workflow(nodes=[nA, nD], name="workflow_4",
+                  workingdir="{}_test_reducer_interf_3".format(plugin), plugin=plugin)
     wf.connect(nA, "out", nD, "d2")
     wf.run()
 

@@ -138,6 +138,7 @@ class Function_Interface(object):
 
 
     def run(self, input):
+        #pdb.set_trace()
         self.output = {}
         if self.input_map:
             for (key_fun, key_inp) in self.input_map.items():

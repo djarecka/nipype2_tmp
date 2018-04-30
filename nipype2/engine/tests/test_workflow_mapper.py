@@ -43,9 +43,10 @@ def test_workflow_mapper_1(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
 
-    wf = Workflow(nodes=[nA], name="workflow_1", workingdir="test_mapper_1")
+    wf = Workflow(nodes=[nA], name="workflow_1",
+                  workingdir="{}_test_mapper_1".format(plugin), plugin=plugin)
     wf.run()
 
     expected = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25),
@@ -61,9 +62,10 @@ def test_workflow_mapper_1a(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5]), "d2": np.array([10, 20, 30])}, mapper=("d1", "d2"),
               interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin=plugin)
+              name="nD")
 
-    wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_mapper_1a")
+    wf = Workflow(nodes=[nD], name="workflow_1a",
+                  workingdir="{}_test_mapper_1a".format(plugin), plugin=plugin)
     wf.run()
 
     expected = [({"d1":3, "d2": 10}, 13), ({"d1":4, "d2":20}, 24), ({"d1":5, "d2":30}, 35)]
@@ -78,12 +80,13 @@ def test_workflow_mapper_2(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin=plugin)
+              name="nB")
 
-    wf = Workflow(nodes=[nA, nB], name="workflow_2", workingdir="test_mapper_2")
+    wf = Workflow(nodes=[nA, nB], name="workflow_2",
+                  workingdir="{}_test_mapper_2".format(plugin), plugin=plugin)
     wf.run()
 
     logger.debug("TEST, nA.result['out']={}".format(nA.result["out"]))
@@ -103,11 +106,12 @@ def test_workflow_mapper_3(plugin):
     """graph: A -> B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin=plugin)
+              name="nC")
 
-    wf = Workflow(nodes=[nA, nC], name="workflow_3", workingdir="test_mapper_3")
+    wf = Workflow(nodes=[nA, nC], name="workflow_3",
+                  workingdir="{}_test_mapper_3".format(plugin), plugin=plugin)
     wf.connect(nA, "out", nC, "c")
     wf.run()
 
@@ -131,12 +135,13 @@ def test_workflow_mapper_4(plugin):
     """graph: A -> D"""
     nA = Node(inputs={"a": np.array([3, 4, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nD = Node(inputs={"d1": np.array([10, 20, 30])}, mapper=("a", "d1"),
               interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin=plugin)
+              name="nD")
 
-    wf = Workflow(nodes=[nA, nD], name="workflow_4", workingdir="test_mapper_4")
+    wf = Workflow(nodes=[nA, nD], name="workflow_4",
+                  workingdir="{}_test_mapper_4".format(plugin), plugin=plugin)
     wf.connect(nA, "out", nD, "d2")
     wf.run()
 
@@ -158,18 +163,19 @@ def test_workflow_mapper_5(plugin):
     """graph: A -> C, A -> D,  B -> D, F"""
     nA = Node(inputs={"a": np.array([3, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nB = Node(inputs={"b": np.array([10, 20])}, mapper="b",
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin=plugin)
+              name="nB")
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin=plugin)
+              name="nC")
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin=plugin, mapper=("a", "b"))
+              name="nD", mapper=("a", "b"))
     nF = Node(interface=Function_Interface(funF, ["out"]),
-              name="nF", plugin=plugin)
+              name="nF")
 
-    wf = Workflow(nodes=[nA, nB, nC, nD, nF], name="workflow_5", workingdir="test_mapper_5")
+    wf = Workflow(nodes=[nA, nB, nC, nD, nF], name="workflow_5",
+                  workingdir="{}_test_mapper_5".format(plugin), plugin=plugin)
     wf.connect(nA, "out", nC, "c")
     wf.connect(nA, "out", nD, "d1")
     wf.connect(nB, "out", nD, "d2")
@@ -205,20 +211,21 @@ def test_workflow_mapper_6(plugin):
     """graph: A -> C, A -> D,  B -> D, C -> E, D -> E, F"""
     nA = Node(inputs={"a": np.array([3, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin=plugin)
+              name="nA")
     nB = Node(inputs={"b": np.array([10, 20])}, mapper="b",
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin=plugin)
+              name="nB")
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin=plugin)
+              name="nC")
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin=plugin, mapper=("a", "b"))
+              name="nD", mapper=("a", "b"))
     nE = Node(interface=Function_Interface(funE, ["out"]),
-              name="nE", plugin=plugin, mapper=("a", "b"))
+              name="nE", mapper=("a", "b"))
     nF = Node(interface=Function_Interface(funF, ["out"]),
-              name="nF", plugin=plugin)
+              name="nF")
 
-    wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_6", workingdir="test_mapper_6")
+    wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_6",
+                  workingdir="{}_test_mapper_6".format(plugin), plugin=plugin)
     wf.connect(nA, "out", nC, "c")
     wf.connect(nA, "out", nD, "d1")
     wf.connect(nB, "out", nD, "d2")
