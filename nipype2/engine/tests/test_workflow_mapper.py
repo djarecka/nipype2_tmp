@@ -38,11 +38,12 @@ def funF():
     return 0
 
 
-def test_workflow_mapper_1():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_mapper_1(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
 
     wf = Workflow(nodes=[nA], name="workflow_1", workingdir="test_mapper_1")
     wf.run()
@@ -55,11 +56,12 @@ def test_workflow_mapper_1():
         assert nA.result["out"][i][1] == res[1]
 
 
-def test_workflow_mapper_1a():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_mapper_1a(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5]), "d2": np.array([10, 20, 30])}, mapper=("d1", "d2"),
               interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_mapper_1a")
     wf.run()
@@ -71,14 +73,15 @@ def test_workflow_mapper_1a():
         assert nD.result["out"][i][1] == res[1]
 
 
-def test_workflow_mapper_2():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_mapper_2(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin="mp")
+              name="nB", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nB], name="workflow_2", workingdir="test_mapper_2")
     wf.run()
@@ -95,13 +98,14 @@ def test_workflow_mapper_2():
     assert nB.result["out"][0][1] == 17
 
 
-def test_workflow_mapper_3():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_mapper_3(plugin):
     """graph: A -> B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin="mp")
+              name="nC", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nC], name="workflow_3", workingdir="test_mapper_3")
     wf.connect(nA, "out", nC, "c")
@@ -122,14 +126,15 @@ def test_workflow_mapper_3():
         assert nC.result["out"][i][1] == res[1]
 
 
-def test_workflow_mapper_4():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_mapper_4(plugin):
     """graph: A -> D"""
     nA = Node(inputs={"a": np.array([3, 4, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nD = Node(inputs={"d1": np.array([10, 20, 30])}, mapper=("a", "d1"),
               interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nD], name="workflow_4", workingdir="test_mapper_4")
     wf.connect(nA, "out", nD, "d2")
@@ -148,20 +153,21 @@ def test_workflow_mapper_4():
         assert nD.result["out"][i][1] == res[1]
 
 
-def test_workflow_mapper_5():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_mapper_5(plugin):
     """graph: A -> C, A -> D,  B -> D, F"""
     nA = Node(inputs={"a": np.array([3, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nB = Node(inputs={"b": np.array([10, 20])}, mapper="b",
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin="mp")
+              name="nB", plugin=plugin)
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin="mp")
+              name="nC", plugin=plugin)
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin="mp", mapper=("a", "b"))
+              name="nD", plugin=plugin, mapper=("a", "b"))
     nF = Node(interface=Function_Interface(funF, ["out"]),
-              name="nF", plugin="mp")
+              name="nF", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nB, nC, nD, nF], name="workflow_5", workingdir="test_mapper_5")
     wf.connect(nA, "out", nC, "c")
@@ -194,23 +200,23 @@ def test_workflow_mapper_5():
     assert nF.result["out"][0][1] == 0
 
 
-#doesnt work
-def test_workflow_mapper_6():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_mapper_6(plugin):
     """graph: A -> C, A -> D,  B -> D, C -> E, D -> E, F"""
     nA = Node(inputs={"a": np.array([3, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nB = Node(inputs={"b": np.array([10, 20])}, mapper="b",
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin="mp")
+              name="nB", plugin=plugin)
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin="mp")
+              name="nC", plugin=plugin)
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin="mp", mapper=("a", "b"))
+              name="nD", plugin=plugin, mapper=("a", "b"))
     nE = Node(interface=Function_Interface(funE, ["out"]),
-              name="nE", plugin="mp", mapper=("a", "b"))
+              name="nE", plugin=plugin, mapper=("a", "b"))
     nF = Node(interface=Function_Interface(funF, ["out"]),
-              name="nF", plugin="mp")
+              name="nF", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nB, nC, nD, nE, nF], name="workflow_6", workingdir="test_mapper_6")
     wf.connect(nA, "out", nC, "c")

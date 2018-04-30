@@ -9,7 +9,7 @@ import os, pdb, time, glob
 import itertools, collections
 import queue
 
-from .workers import MpWorker
+from .workers import MpWorker, SerialWorker
 from .state import State
 
 from .. import config, logging
@@ -23,6 +23,10 @@ class Submiter(object):
         self.node_line = []
         if self.plugin == "mp":
             self.worker = MpWorker()
+        elif self.plugin == "serial":
+            self.worker = SerialWorker()
+        else:
+            raise Exception("plugin {} not available".format(self.plugin))
         logger.debug('Initialize Submitter, graph: {}'.format(graph))
         self._to_finish = list(self.graph)
 
@@ -107,13 +111,14 @@ class Submiter(object):
         for (i, ind) in enumerate(itertools.product(*node.node_states.all_elements)):
             self._submit_work_el(node, i, ind)
 
+
     def _submit_work_el(self, node, i, ind):
         logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
         self.worker.run_el(node.run_interface_el, (i, ind))
 
+
     def close(self):
-        if self.plugin == "mp":
-            self.worker.close_pool()
+        self.worker.close()
 
 
     def submit_join_work(self, node):

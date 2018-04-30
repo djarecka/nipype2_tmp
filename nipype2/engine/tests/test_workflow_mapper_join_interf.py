@@ -37,13 +37,14 @@ def fun_sum(mylist):
     return(sum(mylist))
 
 
-def test_workflow_reducer_interf_1():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_reducer_interf_1(plugin):
     """graph: A"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
               mapper="a", joinByKey=["a"],
               interface=Function_Interface(funA, ["out"]),
               join_fun_inp=(fun_sum, "out"),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
 
     wf = Workflow(nodes=[nA], name="workflow_1", workingdir="test_reducer_interf_1")
     wf.run()
@@ -61,13 +62,14 @@ def test_workflow_reducer_interf_1():
         assert nA.result_join_interf["red_out"][i][1] == res[1]
 
 
-def test_workflow_reducer_interf_1a():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_reducer_interf_1a(plugin):
     """graph: A"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
               mapper="a", join=True,
               interface=Function_Interface(funA, ["out"]),
               join_fun_inp=(fun_sum, "out"),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
 
     wf = Workflow(nodes=[nA], name="workflow_1a", workingdir="test_reducer_interf_1a")
     wf.run()
@@ -85,12 +87,13 @@ def test_workflow_reducer_interf_1a():
         assert nA.result_join_interf["red_out"][i][1] == res[1]
 
 
-def test_workflow_reducer_interf_2():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_reducer_interf_2(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               joinByKey=["d2"], join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_1a", workingdir="test_reducer_interf_2")
     wf.run()
@@ -108,12 +111,13 @@ def test_workflow_reducer_interf_2():
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-def test_workflow_reducer_interf_2a():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_reducer_interf_2a(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               joinByKey=["d1"], join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_2a", workingdir="test_reducer_interf_2a")
     wf.run()
@@ -132,12 +136,13 @@ def test_workflow_reducer_interf_2a():
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-def test_workflow_reducer_interf_2b():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_reducer_interf_2b(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               joinByKey=["d1", "d2"], join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_2b", workingdir="test_reducer_interf_2b")
     wf.run()
@@ -155,12 +160,13 @@ def test_workflow_reducer_interf_2b():
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-def test_workflow_reducer_interf_2c():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_reducer_interf_2c(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
               mapper=("d1", "d2"), interface=Function_Interface(funD, ["out"]),
               join=True, join_fun_inp=(fun_sum, "out"),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_2c", workingdir="test_reducer_interf_2c")
     wf.run()
@@ -178,16 +184,17 @@ def test_workflow_reducer_interf_2c():
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-def test_workflow_reducer_interf_3():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_reducer_interf_3(plugin):
     """graph: A -> D"""
     nA = Node(inputs={"a": np.array([3, 4, 3])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nD = Node(inputs={"d1": np.array([10, 20, 30])},
               mapper=("a", "d1"), joinByKey=["d1"],
               join_fun_inp=(fun_sum, "out"),
               interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nD], name="workflow_4", workingdir="test_reducer_interf_3")
     wf.connect(nA, "out", nD, "d2")

@@ -35,14 +35,15 @@ def funF():
     return 0
 
 
-def test_workflow_basic_1():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_basic_1(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin="mp")
+              name="nB", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="test_1")
     wf.run()
@@ -54,16 +55,17 @@ def test_workflow_basic_1():
     assert nB.result["out"][0][1] == 17
 
 
-def test_workflow_basic_2():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_basic_2(plugin):
     """graph: A -> C, B"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin="mp")
+              name="nB", plugin=plugin)
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin="mp")
+              name="nC", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nB, nC], name="workflow_2", workingdir="test_2")
     wf.connect(nA, "out", nC, "c")
@@ -79,22 +81,23 @@ def test_workflow_basic_2():
     assert nC.result["out"][0][1] == 250
 
 
-def test_workflow_basic_3():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_basic_3(plugin):
     """graph: A -> C, A -> D,  B -> D, C -> E, D -> E, F"""
     nA = Node(inputs={"a": 5},
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nB = Node(inputs={"b": 15},
               interface=Function_Interface(funB, ["out"]),
-              name="nB", plugin="mp")
+              name="nB", plugin=plugin)
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC", plugin="mp")
+              name="nC", plugin=plugin)
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
     nE = Node(interface=Function_Interface(funE, ["out"]),
-              name="nE", plugin="mp")
+              name="nE", plugin=plugin)
     nF = Node(interface=Function_Interface(funF, ["out"]),
-              name="nF", plugin="mp")
+              name="nF", plugin=plugin)
 
 
 

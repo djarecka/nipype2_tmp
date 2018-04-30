@@ -15,18 +15,40 @@ from .. import config, logging
 logger = logging.getLogger('workflow')
 
 
-class MpWorker(object):
+class Worker(object):
+    def __init__(self):
+        logger.debug("Initialize Worker")
+        pass
+
+    def run_el(self):
+        raise NotImplementedError
+
+    def close(self):
+        raise NotImplementedError
+
+
+class MpWorker(Worker):
     def __init__(self, nr_proc=4): #should be none
         self.nr_proc = nr_proc
         self.pool = mp.Pool(processes=self.nr_proc)
-        logger.debug('Initialize Worker')
-
+        logger.debug('Initialize MpWorker')
 
     def run_el(self, interface, inp):
         self.pool.apply_async(interface, (inp[0], inp[1]))
 
-
-    def close_pool(self):
+    def close(self):
         # added this method since I was having somtetimes problem with reading results from (existing) files
         # i thought that pool.close() should work, but still was getting some errors, so testing terminate
         self.pool.terminate()
+
+
+class SerialWorker(Worker):
+    def __init__(self):
+        logger.debug("Initialize SerialWorker")
+        pass
+
+    def run_el(self, interface, inp):
+        interface(inp[0], inp[1])
+
+    def close(self):
+        pass

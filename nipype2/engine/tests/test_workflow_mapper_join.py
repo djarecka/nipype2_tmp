@@ -33,12 +33,13 @@ def funF():
     return 0
 
 
-def test_workflow_join_1():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_1(plugin):
     """graph: A"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
               mapper="a", joinByKey=["a"],
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
 
     wf = Workflow(nodes=[nA], name="workflow_1", workingdir="test_join_1")
     wf.run()
@@ -52,12 +53,13 @@ def test_workflow_join_1():
             assert nA.result["out"][i][1][j][1] == res_el[1]
 
 
-def test_workflow_join_1a():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_1a(plugin):
     """graph: A; should be the same as 1"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
               mapper="a", join=True,
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
 
     wf = Workflow(nodes=[nA], name="workflow_1a", workingdir="test_join_1a")
     wf.run()
@@ -70,12 +72,12 @@ def test_workflow_join_1a():
             assert nA.result["out"][i][1][j][1] == res_el[1]
 
 
-
-def test_workflow_join_2():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_2(plugin):
     """graph: D; scalar mapper"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])}, mapper=("d1", "d2"),
               interface=Function_Interface(funD, ["out"]), joinByKey=["d2"],
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_2", workingdir="test_join_2")
     wf.run()
@@ -93,11 +95,12 @@ def test_workflow_join_2():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-def test_workflow_join_2a():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_2a(plugin):
     """graph: D; scalar mapper; it will be exactly the same output as 2"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])}, mapper=("d1", "d2"),
               interface=Function_Interface(funD, ["out"]), joinByKey=["d1"],
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_2a", workingdir="test_join_2a")
     wf.run()
@@ -116,11 +119,12 @@ def test_workflow_join_2a():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-def test_workflow_join_2b():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_2b(plugin):
     """graph: D; scalar mapper; it will be exactly the same output as 2"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])}, mapper=("d1", "d2"),
               interface=Function_Interface(funD, ["out"]), join=True,
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_2b", workingdir="test_join_2b")
     wf.run()
@@ -135,16 +139,16 @@ def test_workflow_join_2b():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-
-def test_workflow_join_3():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_3(plugin):
     """graph: A -> D, joinByKey in the second key"""
     nA = Node(inputs={"a": np.array([3, 4, 3])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
-              name="nA", plugin="mp")
+              name="nA", plugin=plugin)
     nD = Node(inputs={"d1": np.array([10, 20, 30])},
               mapper=("a", "d1"), joinByKey=["a"],
               interface=Function_Interface(funD, ["out"]),
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nA, nD], name="workflow_3", workingdir="test_join_3")
     wf.connect(nA, "out", nD, "d2")
@@ -163,12 +167,12 @@ def test_workflow_join_3():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-
-def test_workflow_join_4():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_4(plugin):
     """graph: D; mapper: vector """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
               interface=Function_Interface(funD, ["out"]), joinByKey=["d2"],
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_4", workingdir="test_join_4")
     wf.run()
@@ -183,12 +187,12 @@ def test_workflow_join_4():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-
-def test_workflow_join_4a():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_4a(plugin):
     """graph: D; mapper: vector; this is 'transpose' to 4 """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
               interface=Function_Interface(funD, ["out"]), joinByKey=["d1"],
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_4a", workingdir="test_join_4a")
     wf.run()
@@ -203,11 +207,12 @@ def test_workflow_join_4a():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-def test_workflow_join_4b():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_4b(plugin):
     """graph: D; mapper: vector; using all field in joinByKey - output: flat array """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
               interface=Function_Interface(funD, ["out"]), joinByKey=["d2", "d1"],
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_4b", workingdir="test_join_4b")
     wf.run()
@@ -223,11 +228,12 @@ def test_workflow_join_4b():
 
 
 @pytest.mark.xfail(reason="no difference in the order") # TOASK: should this work?
-def test_workflow_join_4c():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_4c(plugin):
     """graph: D; mapper: vector; using all field in joinByKey - output: flat array (different order than 4b) """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
               interface=Function_Interface(funD, ["out"]), joinByKey=["d1", "d2"],
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_4c", workingdir="test_join_4c")
     wf.run()
@@ -242,11 +248,12 @@ def test_workflow_join_4c():
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-def test_workflow_join_4d():
+@pytest.mark.parametrize("plugin", ["mp", "serial"])
+def test_workflow_join_4d(plugin):
     """graph: D; mapper: vector; using join=True - output: flat array (the same as 4c) """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
               interface=Function_Interface(funD, ["out"]), join=True,
-              name="nD", plugin="mp")
+              name="nD", plugin=plugin)
 
     wf = Workflow(nodes=[nD], name="workflow_4d", workingdir="test_join_4d")
     wf.run()
