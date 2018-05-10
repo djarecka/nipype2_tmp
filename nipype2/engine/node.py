@@ -16,6 +16,7 @@ import pdb
 
 from . import state
 from .auxiliary import Function_Interface
+from . import auxiliary as aux
 
 from .. import config, logging
 logger = logging.getLogger('workflow')
@@ -53,13 +54,21 @@ class Node(object):
             default=None, which results in the use of mkdtemp
 
         """
-        #self._mapper = mapper # not used?
-        # contains variables from the state (original) variables
-        self.state_mapper = mapper
+        self.base_dir = base_dir
+        self.config = None
+        self._verify_name(name)
+        self.name = name
+        # for compatibility with node expansion using iterables
+        self._id = self.name
+        self._hierarchy = None
+        self.state_mapper = aux.change_mapper(mapper, self.name)
         if join and joinByKey:
             raise Exception("you cant have join and joinByKey at the same time")
         self._join = join
-        self._joinByKey = joinByKey
+        if joinByKey:
+            self._joinByKey = ["{}-{}".format(self.name, key) for key in joinByKey if "-" not in key]
+        else:
+            self._joinByKey = joinByKey
         if join_fun_inp and not (self._join or self._joinByKey):
             raise Exception("you have to have join or joinByKey to use join_interface")
         elif join_fun_inp:
@@ -69,7 +78,7 @@ class Node(object):
             self._join_interface = None
 
         if inputs:
-            self._inputs = inputs
+            self._inputs = dict(("{}-{}".format(self.name, key), value) for (key, value) in inputs.items())
             # extra input dictionary needed to save values of state inputs
             self.state_inputs = self._inputs.copy()
         else:
@@ -77,13 +86,8 @@ class Node(object):
             self.state_inputs = {}
 
         self._interface = interface
-        self.base_dir = base_dir
-        self.config = None
-        self._verify_name(name)
-        self.name = name
-        # for compatibility with node expansion using iterables
-        self._id = self.name
-        self._hierarchy = None
+        self._interface.input_map = dict((key, "{}-{}".format(self.name, value))
+                                         for (key, value) in self._interface.input_map.items())
         self.sufficient = True
         self._result = {}
         self._result_join_interf = {}
@@ -243,7 +247,7 @@ class Node(object):
 
     @inputs.setter
     def inputs(self, inputs):
-        self._inputs = inputs
+        self._inputs = dict(("{}-{}".format(self.name, key), value) for (key, value) in inputs.items())
         self.state_inputs = self._inputs.copy()
 
 
@@ -326,7 +330,7 @@ class Node(object):
                                        if i in list(from_node.state_inputs.keys())])
             file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
             with open(file_from) as f:
-                inputs_dict[to_socket] = eval(f.readline())
+                inputs_dict["{}-{}".format(self.name, to_socket)] = eval(f.readline())
         return state_dict, inputs_dict
 
     def checking_input_el(self, ind):
@@ -341,6 +345,6 @@ class Node(object):
         # adding directory (should have workflowdir already)
         self.nodedir = os.path.join(self.wfdir, self.fullname)
         os.makedirs(self.nodedir, exist_ok=True)
-        self.node_states = state.State(state_inputs=self.state_inputs, mapper=self.state_mapper)
+        self.node_states = state.State(state_inputs=self.state_inputs, mapper=self.state_mapper, node_name=self.name)
 
 

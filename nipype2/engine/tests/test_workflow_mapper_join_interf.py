@@ -50,7 +50,7 @@ def test_workflow_reducer_interf_1(plugin):
                   workingdir="{}_test_reducer_interf_1".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({}, [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25)])]
+    expected = [({}, [({"nA-a":3}, 9), ({"nA-a":4}, 16), ({"nA-a":5}, 25)])]
     for i, res in enumerate(expected):
         assert nA.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
@@ -76,7 +76,7 @@ def test_workflow_reducer_interf_1a(plugin):
                   workingdir="{}_test_reducer_interf_1a".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({}, [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25)])]
+    expected = [({}, [({"nA-a":3}, 9), ({"nA-a":4}, 16), ({"nA-a":5}, 25)])]
     for i, res in enumerate(expected):
         assert nA.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
@@ -101,14 +101,14 @@ def test_workflow_reducer_interf_2(plugin):
                   workingdir="{}_test_reducer_interf_2".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({"d1":3}, [({"d1":3, "d2": 10}, 13), ({"d1":3, "d2": 40}, 43)]),
-                ({"d1":4}, [({"d1":4, "d2":20}, 24)]),
-                ({"d1":5}, [({"d1":5, "d2":30}, 35)])]
+    expected = [({"nD-d1":3}, [({"nD-d1":3, "nD-d2": 10}, 13), ({"nD-d1":3, "nD-d2": 40}, 43)]),
+                ({"nD-d1":4}, [({"nD-d1":4, "nD-d2":20}, 24)]),
+                ({"nD-d1":5}, [({"nD-d1":5, "nD-d2":30}, 35)])]
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
 
-    expected_redu_interf = [({"d1":3}, 56), ({"d1":4}, 24), ({"d1":5}, 35)]
+    expected_redu_interf = [({"nD-d1":3}, 56), ({"nD-d1":4}, 24), ({"nD-d1":5}, 35)]
     for i, res in enumerate(expected_redu_interf):
         assert nD.result_join_interf["red_out"][i][0] == res[0]
         assert nD.result_join_interf["red_out"][i][1] == res[1]
@@ -126,15 +126,15 @@ def test_workflow_reducer_interf_2a(plugin):
                   workingdir="{}_test_reducer_interf_2a".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({"d2":10}, [({"d1":3, "d2":10}, 13)]),
-                ({"d2":20}, [({"d1":4, "d2":20}, 24)]),
-                ({"d2":30}, [({"d1":5, "d2":30}, 35)]),
-                ({"d2":40}, [({"d1":3, "d2":40}, 43)])]
+    expected = [({"nD-d2":10}, [({"nD-d1":3, "nD-d2":10}, 13)]),
+                ({"nD-d2":20}, [({"nD-d1":4, "nD-d2":20}, 24)]),
+                ({"nD-d2":30}, [({"nD-d1":5, "nD-d2":30}, 35)]),
+                ({"nD-d2":40}, [({"nD-d1":3, "nD-d2":40}, 43)])]
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
 
-    expected_redu_interf = [({"d2":10}, 13), ({"d2":20}, 24), ({"d2":30}, 35), ({"d2":40}, 43)]
+    expected_redu_interf = [({"nD-d2":10}, 13), ({"nD-d2":20}, 24), ({"nD-d2":30}, 35), ({"nD-d2":40}, 43)]
     for i, res in enumerate(expected_redu_interf):
         assert nD.result_join_interf["red_out"][i][0] == res[0]
         assert nD.result_join_interf["red_out"][i][1] == res[1]
@@ -153,8 +153,8 @@ def test_workflow_reducer_interf_2b(plugin):
     wf.run()
 
     # TODO: not sure if the order is "correct"...
-    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":40}, 43),
-                      ({"d1":4, "d2":20}, 24), ({"d1":5, "d2":30}, 35)])]
+    expected = [({}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":3, "nD-d2":40}, 43),
+                      ({"nD-d1":4, "nD-d2":20}, 24), ({"nD-d1":5, "nD-d2":30}, 35)])]
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
@@ -178,8 +178,8 @@ def test_workflow_reducer_interf_2c(plugin):
     wf.run()
 
     # TODO: not sure if the order is "correct"...
-    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":40}, 43),
-                      ({"d1":4, "d2":20}, 24), ({"d1":5, "d2":30}, 35)])]
+    expected = [({}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":3, "nD-d2":40}, 43),
+                      ({"nD-d1":4, "nD-d2":20}, 24), ({"nD-d1":5, "nD-d2":30}, 35)])]
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
@@ -197,7 +197,7 @@ def test_workflow_reducer_interf_3(plugin):
               interface=Function_Interface(funA, ["out"]),
               name="nA")
     nD = Node(inputs={"d1": np.array([10, 20, 30])},
-              mapper=("a", "d1"), joinByKey=["d1"],
+              mapper=("nA-a", "d1"), joinByKey=["d1"],
               join_fun_inp=(fun_sum, "out"),
               interface=Function_Interface(funD, ["out"]),
               name="nD")
@@ -207,13 +207,13 @@ def test_workflow_reducer_interf_3(plugin):
     wf.connect(nA, "out", nD, "d2")
     wf.run()
 
-    expected = [({"a":3}, [({"a":3, "d1": 10}, 19), ({"a":3, "d1": 30}, 39)]),
-                ({"a": 4}, [({"a":4, "d1":20}, 36)])]
+    expected = [({"nA-a":3}, [({"nA-a":3, "nD-d1": 10}, 19), ({"nA-a":3, "nD-d1": 30}, 39)]),
+                ({"nA-a": 4}, [({"nA-a":4, "nD-d1":20}, 36)])]
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
 
-    expected_redu_interf = [({"a":3}, 58), ({"a":4}, 36)]
+    expected_redu_interf = [({"nA-a":3}, 58), ({"nA-a":4}, 36)]
     for i, res in enumerate(expected_redu_interf):
         assert nD.result_join_interf["red_out"][i][0] == res[0]
         assert nD.result_join_interf["red_out"][i][1] == res[1]

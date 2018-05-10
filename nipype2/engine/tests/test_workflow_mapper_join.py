@@ -33,7 +33,9 @@ def funF():
     return 0
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+Plugin_List = ["serial", "mp"]
+
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_1(plugin):
     """graph: A"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
@@ -46,7 +48,7 @@ def test_workflow_join_1(plugin):
     wf.run()
     #pdb.set_trace()
 
-    expected = [({}, [({"a": 3}, 9), ({"a": 4}, 16), ({"a": 5}, 25)])]
+    expected = [({}, [({"nA-a": 3}, 9), ({"nA-a": 4}, 16), ({"nA-a": 5}, 25)])]
     for i, res in enumerate(expected):
         assert nA.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
@@ -54,7 +56,7 @@ def test_workflow_join_1(plugin):
             assert nA.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_1a(plugin):
     """graph: A; should be the same as 1"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
@@ -66,7 +68,7 @@ def test_workflow_join_1a(plugin):
                   workingdir="{}_test_join_1a".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({}, [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25)])]
+    expected = [({}, [({"nA-a":3}, 9), ({"nA-a":4}, 16), ({"nA-a":5}, 25)])]
     for i, res in enumerate(expected):
         assert nA.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
@@ -74,7 +76,7 @@ def test_workflow_join_1a(plugin):
             assert nA.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_2(plugin):
     """graph: D; scalar mapper"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])}, mapper=("d1", "d2"),
@@ -86,9 +88,9 @@ def test_workflow_join_2(plugin):
     wf.run()
 
     expected = [
-        ({"d1":3}, [({"d1":3, "d2":10}, 13),({"d1":3, "d2":40}, 43)]), # TOASK: should this be merged
-        ({"d1":4}, [({"d1":4, "d2":20}, 24)]),
-        ({"d1":5}, [({"d1":5, "d2":30}, 35)])
+        ({"nD-d1":3}, [({"nD-d1":3, "nD-d2":10}, 13),({"nD-d1":3, "nD-d2":40}, 43)]), # TOASK: should this be merged
+        ({"nD-d1":4}, [({"nD-d1":4, "nD-d2":20}, 24)]),
+        ({"nD-d1":5}, [({"nD-d1":5, "nD-d2":30}, 35)])
         ]
     #pdb.set_trace()
     for i, res in enumerate(expected):
@@ -98,7 +100,7 @@ def test_workflow_join_2(plugin):
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_2a(plugin):
     """graph: D; scalar mapper; it will be exactly the same output as 2"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])}, mapper=("d1", "d2"),
@@ -110,10 +112,10 @@ def test_workflow_join_2a(plugin):
     wf.run()
 
     expected = [
-            ({"d2":10}, [({"d1":3, "d2":10}, 13)]),
-            ({"d2":20}, [({"d1":4, "d2":20}, 24)]),
-            ({"d2":30}, [({"d1":5, "d2":30}, 35)]),
-            ({"d2":40}, [({"d1":3, "d2":40}, 43)])
+            ({"nD-d2":10}, [({"nD-d1":3, "nD-d2":10}, 13)]),
+            ({"nD-d2":20}, [({"nD-d1":4, "nD-d2":20}, 24)]),
+            ({"nD-d2":30}, [({"nD-d1":5, "nD-d2":30}, 35)]),
+            ({"nD-d2":40}, [({"nD-d1":3, "nD-d2":40}, 43)])
         ]
     #pdb.set_trace()
     for i, res in enumerate(expected):
@@ -123,7 +125,7 @@ def test_workflow_join_2a(plugin):
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_2b(plugin):
     """graph: D; scalar mapper; it will be exactly the same output as 2"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])}, mapper=("d1", "d2"),
@@ -134,8 +136,8 @@ def test_workflow_join_2b(plugin):
                   workingdir="{}_test_join_2b".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":40}, 43), #the order like in 2
-                      ({"d1":4, "d2":20}, 24), ({"d1":5, "d2":30}, 35)])]
+    expected = [({}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":3, "nD-d2":40}, 43), #the order like in 2
+                      ({"nD-d1":4, "nD-d2":20}, 24), ({"nD-d1":5, "nD-d2":30}, 35)])]
 
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
@@ -144,14 +146,15 @@ def test_workflow_join_2b(plugin):
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
+@pytest.mark.xfail(reason="join TODO")
 def test_workflow_join_3(plugin):
     """graph: A -> D, joinByKey in the second key"""
     nA = Node(inputs={"a": np.array([3, 4, 3])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
               name="nA")
     nD = Node(inputs={"d1": np.array([10, 20, 30])},
-              mapper=("a", "d1"), joinByKey=["a"],
+              mapper=("nA-a", "d1"), joinByKey=["nA-a"],
               interface=Function_Interface(funD, ["out"]),
               name="nD")
 
@@ -161,11 +164,11 @@ def test_workflow_join_3(plugin):
     wf.run()
 
     expected = [
-        ({"d1":10}, [({"a":3, "d1": 10}, 19)]),
-        ({"d1":20}, [({"a":4, "d1":20}, 36)]),
-        ({"d1":30}, [({"a":3, "d1": 30}, 39)])
+        ({"nD-d1":10}, [({"nA-a":3, "nD-d1": 10}, 19)]),
+        ({"nD-d1":20}, [({"nA-a":4, "nD-d1":20}, 36)]),
+        ({"nD-d1":30}, [({"nA-a":3, "nD-d1": 30}, 39)])
             ]
-
+    pdb.set_trace()
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
@@ -173,7 +176,7 @@ def test_workflow_join_3(plugin):
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_4(plugin):
     """graph: D; mapper: vector """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
@@ -184,9 +187,9 @@ def test_workflow_join_4(plugin):
                   workingdir="{}_test_join_4".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({"d1":3}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":20}, 23)]),
-                ({"d1":4}, [({"d1":4, "d2":10}, 14), ({"d1":4, "d2":20}, 24)])]
-
+    expected = [({"nD-d1":3}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":3, "nD-d2":20}, 23)]),
+                ({"nD-d1":4}, [({"nD-d1":4, "nD-d2":10}, 14), ({"nD-d1":4, "nD-d2":20}, 24)])]
+    pdb.set_trace()
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
@@ -194,7 +197,7 @@ def test_workflow_join_4(plugin):
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_4a(plugin):
     """graph: D; mapper: vector; this is 'transpose' to 4 """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
@@ -205,8 +208,8 @@ def test_workflow_join_4a(plugin):
                   workingdir="{}_test_join_4a".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({"d2":10}, [({"d1":3, "d2":10}, 13), ({"d1":4, "d2":10}, 14)]),
-                ({"d2":20}, [({"d1":3, "d2":20}, 23), ({"d1":4, "d2":20}, 24)])]
+    expected = [({"nD-d2":10}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":4, "nD-d2":10}, 14)]),
+                ({"nD-d2":20}, [({"nD-d1":3, "nD-d2":20}, 23), ({"nD-d1":4, "nD-d2":20}, 24)])]
 
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
@@ -215,7 +218,7 @@ def test_workflow_join_4a(plugin):
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_4b(plugin):
     """graph: D; mapper: vector; using all field in joinByKey - output: flat array """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
@@ -226,8 +229,8 @@ def test_workflow_join_4b(plugin):
                   workingdir="{}_test_join_4b".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":20}, 23),
-                ({"d1":4, "d2":10}, 14), ({"d1":4, "d2":20}, 24)])]
+    expected = [({}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":3, "nD-d2":20}, 23),
+                ({"nD-d1":4, "nD-d2":10}, 14), ({"nD-d1":4, "nD-d2":20}, 24)])]
 
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
@@ -237,7 +240,7 @@ def test_workflow_join_4b(plugin):
 
 
 @pytest.mark.xfail(reason="no difference in the order") # TOASK: should this work?
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_4c(plugin):
     """graph: D; mapper: vector; using all field in joinByKey - output: flat array (different order than 4b) """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
@@ -248,8 +251,8 @@ def test_workflow_join_4c(plugin):
                   workingdir="{}_test_join_4c".format(plugin), plugin=plugin)
     wf.run()
     #pdb.set_trace()
-    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":4, "d2":10}, 14),
-                ({"d1":3, "d2":20}, 23), ({"d1":4, "d2":20}, 24)])]
+    expected = [({}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":4, "nD-d2":10}, 14),
+                ({"nD-d1":3, "nD-d2":20}, 23), ({"nD-d1":4, "nD-d2":20}, 24)])]
 
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
@@ -258,7 +261,7 @@ def test_workflow_join_4c(plugin):
             assert nD.result["out"][i][1][j][1] == res_el[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_4d(plugin):
     """graph: D; mapper: vector; using join=True - output: flat array (the same as 4c) """
     nD = Node(inputs={"d1": np.array([3, 4]), "d2": np.array([10, 20])}, mapper=["d1", "d2"],
@@ -269,8 +272,8 @@ def test_workflow_join_4d(plugin):
                   workingdir="{}_test_join_4d".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({}, [({"d1":3, "d2":10}, 13), ({"d1":3, "d2":20}, 23),
-                      ({"d1":4, "d2":10}, 14), ({"d1":4, "d2":20}, 24)])] # the same order as 4b
+    expected = [({}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":3, "nD-d2":20}, 23),
+                      ({"nD-d1":4, "nD-d2":10}, 14), ({"nD-d1":4, "nD-d2":20}, 24)])] # the same order as 4b
 
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]

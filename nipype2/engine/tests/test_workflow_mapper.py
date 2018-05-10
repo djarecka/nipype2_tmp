@@ -20,8 +20,8 @@ def funA(a):
         print("A after extra waiting")
     return a**2
 
-def funB(b):
-    return b+2
+def funB(a):
+    return a+2
 
 def funC(c):
     return 10 * c
@@ -37,8 +37,10 @@ def funE(e1, e2):
 def funF():
     return 0
 
+Plugin_List = ["serial", "mp"]
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_mapper_1(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
@@ -49,15 +51,15 @@ def test_workflow_mapper_1(plugin):
                   workingdir="{}_test_mapper_1".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25),
-                ({"a": 6}, 36), ({"a": 7}, 49), ({"a": 8}, 64)]
+    expected = [({"nA-a":3}, 9), ({"nA-a":4}, 16), ({"nA-a":5}, 25),
+                ({"nA-a": 6}, 36), ({"nA-a": 7}, 49), ({"nA-a": 8}, 64)]
     logger.debug("TEST, result['out']={}".format(nA.result["out"]))
     for i, res in enumerate(expected):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_mapper_1a(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5]), "d2": np.array([10, 20, 30])}, mapper=("d1", "d2"),
@@ -68,20 +70,20 @@ def test_workflow_mapper_1a(plugin):
                   workingdir="{}_test_mapper_1a".format(plugin), plugin=plugin)
     wf.run()
 
-    expected = [({"d1":3, "d2": 10}, 13), ({"d1":4, "d2":20}, 24), ({"d1":5, "d2":30}, 35)]
+    expected = [({"nD-d1":3, "nD-d2": 10}, 13), ({"nD-d1":4, "nD-d2":20}, 24), ({"nD-d1":5, "nD-d2":30}, 35)]
     logger.debug("TEST, result['out']={}".format(nD.result["out"]))
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_mapper_2(plugin):
     """graph: A, B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
               name="nA")
-    nB = Node(inputs={"b": 15},
+    nB = Node(inputs={"a": 15},
               interface=Function_Interface(funB, ["out"]),
               name="nB")
 
@@ -91,24 +93,24 @@ def test_workflow_mapper_2(plugin):
 
     logger.debug("TEST, nA.result['out']={}".format(nA.result["out"]))
     logger.debug("TEST, nB.result['out']={}".format(nB.result["out"]))
-    expected = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25),
-                ({"a": 6}, 36), ({"a": 7}, 49), ({"a": 8}, 64)]
+    expected = [({"nA-a":3}, 9), ({"nA-a":4}, 16), ({"nA-a":5}, 25),
+                ({"nA-a": 6}, 36), ({"nA-a": 7}, 49), ({"nA-a": 8}, 64)]
     for i, res in enumerate(expected):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
-    assert nB.result["out"][0][0] == {"b": 15}
+    assert nB.result["out"][0][0] == {"nB-a": 15}
     assert nB.result["out"][0][1] == 17
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_mapper_3(plugin):
     """graph: A -> B"""
     nA = Node(inputs={"a": np.array([3, 4, 5, 6, 7, 8])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
               name="nA")
     nC = Node(interface=Function_Interface(funC, ["out"]),
-              name="nC")
+              name="nC", mapper="nA-a")
 
     wf = Workflow(nodes=[nA, nC], name="workflow_3",
                   workingdir="{}_test_mapper_3".format(plugin), plugin=plugin)
@@ -116,27 +118,27 @@ def test_workflow_mapper_3(plugin):
     wf.run()
 
     logger.debug("TEST, nA.result['out']={}".format(nA.result["out"]))
-    expected_A = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25),
-                 ({"a": 6}, 36), ({"a": 7}, 49), ({"a": 8}, 64)]
+    expected_A = [({"nA-a":3}, 9), ({"nA-a":4}, 16), ({"nA-a":5}, 25),
+                 ({"nA-a": 6}, 36), ({"nA-a": 7}, 49), ({"nA-a": 8}, 64)]
     for i, res in enumerate(expected_A):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
     logger.debug("TEST, nC.result['out']={}".format(nC.result["out"]))
-    expected_C = [({"a": 3}, 90), ({"a": 4}, 160), ({"a": 5}, 250),
-                  ({"a": 6}, 360), ({"a": 7}, 490), ({"a": 8}, 640)]
+    expected_C = [({"nA-a": 3}, 90), ({"nA-a": 4}, 160), ({"nA-a": 5}, 250),
+                  ({"nA-a": 6}, 360), ({"nA-a": 7}, 490), ({"nA-a": 8}, 640)]
     for i, res in enumerate(expected_C):
         assert nC.result["out"][i][0] == res[0]
         assert nC.result["out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_mapper_4(plugin):
     """graph: A -> D"""
     nA = Node(inputs={"a": np.array([3, 4, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
               name="nA")
-    nD = Node(inputs={"d1": np.array([10, 20, 30])}, mapper=("a", "d1"),
+    nD = Node(inputs={"d1": np.array([10, 20, 30])}, mapper=("nA-a", "d1"),
               interface=Function_Interface(funD, ["out"]),
               name="nD")
 
@@ -146,31 +148,31 @@ def test_workflow_mapper_4(plugin):
     wf.run()
 
     logger.debug("TEST, nA.result['out']={}".format(nA.result["out"]))
-    expected_A = [({"a":3}, 9), ({"a":4}, 16), ({"a":5}, 25)]
+    expected_A = [({"nA-a":3}, 9), ({"nA-a":4}, 16), ({"nA-a":5}, 25)]
     for i, res in enumerate(expected_A):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
     logger.debug("TEST, nD.result['out']={}".format(nD.result["out"]))
-    expected_D = [({"a":3, "d1":10}, 19), ({"a":4, "d1":20}, 36), ({"a":5, "d1":30}, 55)]
+    expected_D = [({"nA-a":3, "nD-d1":10}, 19), ({"nA-a":4, "nD-d1":20}, 36), ({"nA-a":5, "nD-d1":30}, 55)]
     for i, res in enumerate(expected_D):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_mapper_5(plugin):
     """graph: A -> C, A -> D,  B -> D, F"""
     nA = Node(inputs={"a": np.array([3, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
               name="nA")
-    nB = Node(inputs={"b": np.array([10, 20])}, mapper="b",
+    nB = Node(inputs={"a": np.array([10, 20])}, mapper="a",
               interface=Function_Interface(funB, ["out"]),
               name="nB")
     nC = Node(interface=Function_Interface(funC, ["out"]),
               name="nC")
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", mapper=("a", "b"))
+              name="nD", mapper=("nA-a", "nB-a"))
     nF = Node(interface=Function_Interface(funF, ["out"]),
               name="nF")
 
@@ -181,23 +183,23 @@ def test_workflow_mapper_5(plugin):
     wf.connect(nB, "out", nD, "d2")
     wf.run()
 
-    expected_A = [({"a":3}, 9), ({"a":5}, 25)]
+    expected_A = [({"nA-a":3}, 9), ({"nA-a":5}, 25)]
     for i, res in enumerate(expected_A):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
-    expected_B = [({"b":10}, 12), ({"b":20}, 22)]
+    expected_B = [({"nB-a":10}, 12), ({"nB-a":20}, 22)]
     for i, res in enumerate(expected_B):
         assert nB.result["out"][i][0] == res[0]
         assert nB.result["out"][i][1] == res[1]
 
-    expected_C = [({"a": 3}, 90), ({"a": 5}, 250)]
+    expected_C = [({"nA-a": 3}, 90), ({"nA-a": 5}, 250)]
     for i, res in enumerate(expected_C):
         assert nC.result["out"][i][0] == res[0]
         assert nC.result["out"][i][1] == res[1]
 
 
-    expected_D = [({"a":3, "b":10}, 21), ({"a":5, "b":20}, 47)]
+    expected_D = [({"nA-a":3, "nB-a":10}, 21), ({"nA-a":5, "nB-a":20}, 47)]
     for i, res in enumerate(expected_D):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
@@ -206,21 +208,21 @@ def test_workflow_mapper_5(plugin):
     assert nF.result["out"][0][1] == 0
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_mapper_6(plugin):
     """graph: A -> C, A -> D,  B -> D, C -> E, D -> E, F"""
     nA = Node(inputs={"a": np.array([3, 5])}, mapper="a",
               interface=Function_Interface(funA, ["out"]),
               name="nA")
-    nB = Node(inputs={"b": np.array([10, 20])}, mapper="b",
+    nB = Node(inputs={"a": np.array([10, 20])}, mapper="a",
               interface=Function_Interface(funB, ["out"]),
               name="nB")
     nC = Node(interface=Function_Interface(funC, ["out"]),
               name="nC")
     nD = Node(interface=Function_Interface(funD, ["out"]),
-              name="nD", mapper=("a", "b"))
+              name="nD", mapper=("nA-a", "nB-a"))
     nE = Node(interface=Function_Interface(funE, ["out"]),
-              name="nE", mapper=("a", "b"))
+              name="nE", mapper=("nA-a", "nB-a"))
     nF = Node(interface=Function_Interface(funF, ["out"]),
               name="nF")
 
@@ -233,27 +235,27 @@ def test_workflow_mapper_6(plugin):
     wf.connect(nD, "out", nE, "e2")
     wf.run()
 
-    expected_A = [({"a":3}, 9), ({"a":5}, 25)]
+    expected_A = [({"nA-a":3}, 9), ({"nA-a":5}, 25)]
     for i, res in enumerate(expected_A):
         assert nA.result["out"][i][0] == res[0]
         assert nA.result["out"][i][1] == res[1]
 
-    expected_B = [({"b":10}, 12), ({"b":20}, 22)]
+    expected_B = [({"nB-a":10}, 12), ({"nB-a":20}, 22)]
     for i, res in enumerate(expected_B):
         assert nB.result["out"][i][0] == res[0]
         assert nB.result["out"][i][1] == res[1]
 
-    expected_C = [({"a": 3}, 90), ({"a": 5}, 250)]
+    expected_C = [({"nA-a": 3}, 90), ({"nA-a": 5}, 250)]
     for i, res in enumerate(expected_C):
         assert nC.result["out"][i][0] == res[0]
         assert nC.result["out"][i][1] == res[1]
 
-    expected_D = [({"a":3, "b":10}, 21), ({"a":5, "b":20}, 47)]
+    expected_D = [({"nA-a":3, "nB-a":10}, 21), ({"nA-a":5, "nB-a":20}, 47)]
     for i, res in enumerate(expected_D):
         assert nD.result["out"][i][0] == res[0]
         assert nD.result["out"][i][1] == res[1]
 
-    expected_E = [({"a":3, "b":10}, 1890), ({"a":5, "b":20}, 11750)]
+    expected_E = [({"nA-a":3, "nB-a":10}, 1890), ({"nA-a":5, "nB-a":20}, 11750)]
     for i, res in enumerate(expected_E):
         assert nE.result["out"][i][0] == res[0]
         assert nE.result["out"][i][1] == res[1]

@@ -6,10 +6,11 @@ import pdb
 from . import auxiliary as aux
 
 class State(object):
-    def __init__(self, state_inputs, mapper=None, inp_ord_map = {}):
+    def __init__(self, state_inputs, node_name, mapper=None, inp_ord_map = {}):
         self.state_inputs = state_inputs
 
         self._mapper = mapper
+        self.node_name = node_name
         if self._mapper:
             # changing mapper (as in rpn), so I can read from left to right
             # e.g. if mapper=('d', ['e', 'r']), _mapper_rpn=['d', 'e', 'r', '*', '.']

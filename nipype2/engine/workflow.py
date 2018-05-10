@@ -84,6 +84,7 @@ class Workflow(object):
                         pass
 
                     #TODO: implement inner mapper
+                    # TODO: if nn.state_mapper is a string and inp can be a letter that exists in nn.state_mapper
                     elif  nn.state_mapper and inp in nn.state_mapper:
                         raise Exception("{} can be in the mapper only together with {}, i.e. {})".format(inp, out[1],
                                                                                                         [out[1], inp]))

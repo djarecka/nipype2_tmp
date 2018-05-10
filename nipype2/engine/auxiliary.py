@@ -1,5 +1,5 @@
 import pdb
-
+import inspect
 from .. import config, logging
 logger = logging.getLogger('workflow')
 
@@ -127,6 +127,37 @@ def converting_axis2input(state_inputs, axis_for_input, ndim):
     return input_for_axis, shape
 
 
+def add_name(mlist, name):
+    for i, elem in enumerate(mlist):
+        if isinstance(elem, str):
+            if "-" in elem:
+                pass
+            else:
+                mlist[i] = "{}-{}".format(name, mlist[i])
+        elif isinstance(elem, list):
+            mlist[i] = add_name(elem, name)
+        elif isinstance(elem, tuple):
+            mlist[i] = list(elem)
+            mlist[i] = add_name(mlist[i], name)
+            mlist[i] = tuple(mlist[i])
+    return mlist
+
+
+def change_mapper(mapper, name):
+    if isinstance(mapper, str):
+        if "-" in mapper:
+            return mapper
+        else:
+            return "{}-{}".format(name, mapper)
+    elif isinstance(mapper, list):
+        add_name(mapper, name)
+        return mapper
+    elif isinstance(mapper, tuple):
+        mapper_l = list(mapper)
+        add_name(mapper_l, name)
+        return tuple(mapper_l)
+
+
 class Function_Interface(object):
     def __init__(self, function, output_nm, input_map=None):
         self.function = function
@@ -134,7 +165,12 @@ class Function_Interface(object):
             self._output_nm = output_nm
         else:
             raise Exception("output_nm should be a list")
-        self.input_map = input_map
+        if not input_map:
+            self.input_map = {}
+        # TODO use signature
+        for key in inspect.getargspec(function)[0]:
+            if key not in self.input_map.keys():
+                self.input_map[key] = key
 
 
     def run(self, input):
@@ -142,6 +178,7 @@ class Function_Interface(object):
         self.output = {}
         if self.input_map:
             for (key_fun, key_inp) in self.input_map.items():
+                #pdb.set_trace()
                 try:
                     input[key_fun] = input.pop(key_inp)
                 except KeyError:
