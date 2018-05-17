@@ -9,7 +9,7 @@ import os, pdb, time, glob
 import itertools, collections
 import queue
 
-from .workers import MpWorker
+from .workers import MpWorker, SerialWorker, DaskWorker, ConcurrentFuturesWorker
 from .state import State
 
 from .. import config, logging
@@ -23,8 +23,17 @@ class Submiter(object):
         self.node_line = []
         if self.plugin == "mp":
             self.worker = MpWorker()
+        elif self.plugin == "serial":
+            self.worker = SerialWorker()
+        elif self.plugin == "dask":
+            self.worker = DaskWorker()
+        elif self.plugin == "cf":
+            self.worker = ConcurrentFuturesWorker()
+        else:
+            raise Exception("plugin {} not available".format(self.plugin))
         logger.debug('Initialize Submitter, graph: {}'.format(graph))
         self._to_finish = list(self.graph)
+
 
     def run_workflow(self):
         for (i_n, node) in enumerate(self.graph):
@@ -35,9 +44,27 @@ class Submiter(object):
             else:
                 break
 
+            # in case there is no element in the graph that goes to the break
+            # i want to be sure that not calculating the last node again in the next for loop
+            if i_n == len(self.graph) - 1:
+                i_n += 1
+
+            # adding task for reducer
+            if node._join_interface:
+                # decided to add it as one task, since I have to wait for everyone before  can start it anyway
+                self.node_line.append((node, "join", None))
+
+
         # all nodes that are not self sufficient will go to the line
+        # iterating over all elements
         # (i think ordered list work well here, since it's more efficient to check within a specific order)
-        self.node_line = self.graph[i_n:]
+        for nn in self.graph[i_n:]:
+            for (i, ind) in enumerate(itertools.product(*nn.node_states.all_elements)):
+                self.node_line.append((nn, i, ind))
+            if nn._join_interface:
+                # decided to add it as one task, since I have to wait for everyone before can start it anyway
+                self.node_line.append((nn, "join", None))
+
 
         # this parts submits nodes that are waiting to be run
         # it should stop when nothing is waiting
@@ -52,34 +79,60 @@ class Submiter(object):
             time.sleep(3)
 
 
+    # for now without callback, so checking all nodes(with ind) in some order
     def _nodes_check(self):
-        for to_node in self.node_line:
-            ready = True
-            for (from_node, from_socket, to_socket) in to_node.needed_outputs:
-                if from_node.global_done:
-                    try:
-                        self._to_finish.remove(from_node)
-                    except ValueError:
-                        pass
+        _to_remove = []
+        for (to_node, i, ind) in self.node_line:
+            if i == "join":
+                if to_node.global_done: #have to check if interface has finished
+                    self.submit_join_work(to_node)
+                    _to_remove.append((to_node, i, ind))
                 else:
-                    ready = False
-                    break
-            if ready:
-                self.submit_work(to_node)
-                self.node_line.remove(to_node)
+                    pass
+            else:
+                if to_node.checking_input_el(ind):
+                    self._submit_work_el(to_node, i, ind)
+                    _to_remove.append((to_node, i, ind))
+                else:
+                    pass
+        # can't remove during iterating
+        for rn in _to_remove:
+            self.node_line.remove(rn)
         return self.node_line
 
 
+    # this I believe can be done for entire node
     def _output_check(self):
+        _to_remove = []
         for node in self._to_finish:
+            print("_output check node", node,node.global_done, node._join_interface, node._global_done_join )
             if node.global_done:
-                self._to_finish.remove(node)
+                if node._join_interface:
+                    if node.global_done_join:
+                        _to_remove.append(node)
+                else:
+                    _to_remove.append(node)
+        for rn in _to_remove:
+            self._to_finish.remove(rn)
         return self._to_finish
 
 
     def submit_work(self, node):
-        node.node_states_inputs = State(state_inputs=node._inputs, mapper=node._mapper,
-                                        inp_ord_map=node._input_order_map)
-        for (i, ind) in enumerate(itertools.product(*node.node_states._all_elements)):
-            logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
-            self.worker.run_el(node.run_interface_el, (i, ind))
+        for (i, ind) in enumerate(itertools.product(*node.node_states.all_elements)):
+            self._submit_work_el(node, i, ind)
+
+
+    def _submit_work_el(self, node, i, ind):
+        logger.debug("SUBMIT WORKER, node: {}, ind: {}".format(node, ind))
+        self.worker.run_el(node.run_interface_el, (i, ind))
+
+
+    def close(self):
+        self.worker.close()
+
+
+    def submit_join_work(self, node):
+        logger.debug("SUBMIT JOIN WORKER, node: {}".format(node))
+        for (state_redu, res_redu) in node.result[node._join_interface_input]: # TODO, should be more general than out
+            res_redu_l = [i[1] for i in res_redu]
+            self.worker.run_el(node.run_interface_join_el, (state_redu, res_redu_l))

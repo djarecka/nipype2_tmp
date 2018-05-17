@@ -9,31 +9,26 @@ from builtins import object
 from future import standard_library
 standard_library.install_aliases()
 
-from copy import deepcopy
-import re, os, time, pdb, glob
-import numpy as np
-import networkx as nx
+import re, os, glob
 import itertools
 import collections
+import pdb
 
 from . import state
+from .auxiliary import Function_Interface
+from . import auxiliary as aux
 
 from .. import config, logging
 logger = logging.getLogger('workflow')
 
 
-class FakeNode(object):
-    def __init__(self):
-        self.a = 3
-    def print(self):
-        print("FAKE NODE!!!!!")
-
 
 class Node(object):
     """Defines common attributes and functions for workflows and nodes."""
 
-    def __init__(self, interface, name, mapper=None, reducer=None, reducer_interface=None,
-                 inputs=None, base_dir=None, plugin="mp"):
+    def __init__(self, interface, name, inputs=None, mapper=None,
+                 join=False, joinByKey=None, join_fun_inp=None,
+                 base_dir=None):
         """ Initialize base parameters of a workflow or node
 
         Parameters
@@ -44,10 +39,13 @@ class Node(object):
             inputs fields
         mapper: string, tuple (for scalar) or list (for outer product)
             mapper used with the interface
-        reducer: string
-            field used to group results
-        reducer_interface: Interface
-            interface used to reduce results
+        join: Bool
+            joining all elements (after mapping) together
+        joinByKey: list
+            list of fields will be used for joining
+        join_fun_inp: tuple
+            (function used for joined output,
+            output name from the interface that should go to the function)
         name : string (mandatory)
             Name of this node. Name must be alphanumeric and not contain any
             special characters (e.g., '.', '@').
@@ -56,20 +54,6 @@ class Node(object):
             default=None, which results in the use of mkdtemp
 
         """
-        self._mapper = mapper
-        # contains variables from the state (original) variables
-        self._state_mapper = self._mapper
-        self._reducer = reducer
-        self._reducer_interface = reducer_interface
-        if inputs:
-            self._inputs = inputs
-            # extra input dictionary needed to save values of state inputs
-            self._state_inputs = self._inputs.copy()
-        else:
-            self._inputs = {}
-            self._state_inputs = {}
-
-        self._interface = interface
         self.base_dir = base_dir
         self.config = None
         self._verify_name(name)
@@ -77,23 +61,49 @@ class Node(object):
         # for compatibility with node expansion using iterables
         self._id = self.name
         self._hierarchy = None
-        self.plugin = plugin
-        self._input_order_map = {}
+        self.state_mapper = aux.change_mapper(mapper, self.name)
+        if join and joinByKey:
+            raise Exception("you cant have join and joinByKey at the same time")
+        self._join = join
+        if joinByKey:
+            self._joinByKey = ["{}-{}".format(self.name, key) for key in joinByKey if "-" not in key]
+        else:
+            self._joinByKey = joinByKey
+        if join_fun_inp and not (self._join or self._joinByKey):
+            raise Exception("you have to have join or joinByKey to use join_interface")
+        elif join_fun_inp:
+            self._join_interface_input = join_fun_inp[1]
+            self._join_interface = Function_Interface(join_fun_inp[0], ["red_{}".format(self._join_interface_input)])
+        else:
+            self._join_interface = None
+
+        if inputs:
+            self._inputs = dict(("{}-{}".format(self.name, key), value) for (key, value) in inputs.items())
+            # extra input dictionary needed to save values of state inputs
+            self.state_inputs = self._inputs.copy()
+        else:
+            self._inputs = {}
+            self.state_inputs = {}
+
+        self._interface = interface
+        self._interface.input_map = dict((key, "{}-{}".format(self.name, value))
+                                         for (key, value) in self._interface.input_map.items())
         self.sufficient = True
         self._result = {}
+        self._result_join_interf = {}
         self.needed_outputs = []
         self.sending_output = [] # what should be send to another nodes
-        if self._reducer is None:
-            self._out_nm = self._interface._output_nm
-        else:
-            raise Exception("have to finish...")
+        # TODO: should I change it for join
+        self._out_nm = self._interface._output_nm
         logger.debug('Initialize Node {}'.format(name))
         self._global_done = False # if all tasks are done (if mapper present, I'm checking for all state elements)
+        self._global_done_join = False  # if reduction function is done
 
 
     @property
     def global_done(self):
         # once _global_done os True, this should not change
+        logger.debug('global_done {}'.format(self._global_done))
         if self._global_done:
             return self._global_done
         else:
@@ -106,7 +116,11 @@ class Node(object):
         for ind in itertools.product(*self.node_states._all_elements):
             state_dict = self.node_states.state_values(ind)
             dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
-            os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
+            if self._joinByKey:
+                dir_red = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i not in self._joinByKey])
+                dir_nm_el = os.path.join(dir_red, dir_nm_el)
+            elif self._join:
+                dir_nm_el = os.path.join("join_", dir_nm_el)
             for key_out in self._out_nm:
                 if not os.path.isfile(os.path.join(self.nodedir, dir_nm_el, key_out+".txt")):
                     return False
@@ -115,25 +129,49 @@ class Node(object):
 
 
     @property
+    def global_done_join(self):
+        # once _global_done_join is True, this should not change
+        logger.debug('global_done {}'.format(self._global_done_join))
+        if self._global_done_join:
+            return self._global_done_join
+        else:
+            return self._check_all_results_join_interf()
+
+
+    def _check_all_results_join_interf(self):
+        # checking if all files that should be created are present
+        key_red_interf = self._join_interface_input
+        for (state_redu, res_redu) in self.result[key_red_interf]:
+            dir_red = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_redu.items())])
+            if not os.path.isfile(os.path.join(self.nodedir, dir_red, "red_" + key_red_interf + ".txt")):
+                return False
+        return True
+
+
+    @property
     def result(self):
         if not self._result:
-            self._reading_results()
+            if self._joinByKey or self._join:
+                self._reading_results_join()
+            else:
+                self._reading_results()
         return self._result
+
 
     def _reading_results(self):
         """
         reading results from file,
         doesn't check if everything is ready, i.e. if self.global_done"""
-        # TODO: probably needs changes when reducer
         for key_out in self._out_nm:
             self._result[key_out] = []
-            if self._state_inputs:
+            if self.state_inputs:
                 files = [name for name in glob.glob("{}/*/{}.txt".format(self.nodedir, key_out))]
                 for file in files:
                     st_el = file.split(os.sep)[-2].split("_")
                     st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
                                                             for el in st_el])
                     with open(file) as fout:
+                        logger.debug('Reading Results: file={}, st_dict={}'.format(file, st_dict))
                         self._result[key_out].append((st_dict, eval(fout.readline())))
             # for nodes without input
             else:
@@ -142,19 +180,75 @@ class Node(object):
                     self._result[key_out].append(({}, eval(fout.readline())))
 
 
+    # TODO: should be probably combine with _reading_results
+    def _reading_results_join(self):
+        """
+        reading results from file,
+        doesn't check if everything is ready, i.e. if self.global_done"""
+        for key_out in self._out_nm:
+            self._result[key_out] = []
+            dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
+            for ii, dir_red in enumerate(dir_red_l):
+                #to zmienic, wywalic _ i
+                red_el = dir_red.split(os.sep)[-1].split("_")[1:]
+                if red_el and red_el[0]:
+                    red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                       for el in red_el])
+                else:
+                    red_dict = {}
+                self._result[key_out].append((red_dict, []))
+                #pdb.set_trace()
+                files = [name for name in glob.glob("{}/*/{}.txt".format(dir_red, key_out))]
+                for file in files:
+                    st_el = file.split(os.sep)[-2].split("_")
+                    st_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                            for el in st_el])
+                    with open(file) as fout:
+                        self._result[key_out][ii][1].append((st_dict, eval(fout.readline())))
+                    print("RESULT", key_out, self._result[key_out])
+
+
+    # only if we ask for reduction interface
+    @property
+    def result_join_interf(self):
+        if not self._join_interface:
+            raise Exception("don't have join interface, can't provide result_join")
+        else:
+            if not self._result_join_interf:
+                self._reading_results_join_interf()
+        return self._result_join_interf
+
+
+    def _reading_results_join_interf(self):
+        """
+        reading results of red_interface from file,
+        #doesn't check if everything is ready, i.e. if self.global_done_join"""
+        # TODO red_{}.txt powinno byc gdzies indziej, nie wiem dlaczego jest w glownym
+        self._result_join_interf["red_{}".format(self._join_interface_input)] = []
+        dir_red_l = [name for name in glob.glob("{}/*".format(self.nodedir))]
+        logger.debug("_reading_results_join DIR RED L {}".format( dir_red_l))
+        for ii, dir_red in enumerate(dir_red_l):
+            red_el = dir_red.split(os.sep)[-1].split("_")
+            try:
+                red_dict = collections.OrderedDict([(el.split(".")[0], eval(el.split(".")[1]))
+                                                   for el in red_el[1:]])
+            except IndexError:
+                red_dict = {}
+            file_redu = os.path.join(dir_red,"red_{}.txt".format(self._join_interface_input))
+            with open(file_redu) as fout:
+                self._result_join_interf["red_{}".format(self._join_interface_input)].append((red_dict, eval(fout.readline())))
 
 
     @property
     def inputs(self):
         """Return the inputs of the underlying interface"""
         #return self._interface.inputs
-        # dj: temporary will use self._inputs
         return self._inputs
 
     @inputs.setter
     def inputs(self, inputs):
-        self._inputs = inputs
-        self._state_inputs = self._inputs.copy()
+        self._inputs = dict(("{}-{}".format(self.name, key), value) for (key, value) in inputs.items())
+        self.state_inputs = self._inputs.copy()
 
 
     @property
@@ -162,10 +256,12 @@ class Node(object):
         """Return the output fields of the underlying interface"""
         return self._interface._outputs()
 
+
     @property
     def interface(self):
         """Return the underlying interface object"""
         return self._interface
+
 
     @property
     def fullname(self):
@@ -191,31 +287,66 @@ class Node(object):
 
     def run_interface_el(self, i, ind):
         """ running interface one element generated from node_state."""
-        logger.debug("Run interface el, name={}, i={}, in={}".format(self.name, i, ind))
-        inputs_dict = self.node_states_inputs.state_values(ind)
-        state_dict = self.node_states.state_values(ind)
-        # reading extra inputs that come from previous nodes
-        for (from_node, from_socket, to_socket) in self.needed_outputs:
-            dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
-                                       if i in list(from_node._state_inputs.keys())])
-            file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
-            with open(file_from) as f:
-                inputs_dict[to_socket] = eval(f.readline())
-
-        self._interface.run(inputs_dict)
+        logger.debug("Run interface el, name={}, i={}, ind={}".format(self.name, i, ind))
+        state_dict, inputs_dict = self._collecting_input_el(ind)
+        logger.debug("Run interface el, name={}, inputs_dict={}, state_dict={}".format(
+                                                            self.name, inputs_dict, state_dict))
+        res = self._interface.run(inputs_dict)
+        #pdb.set_trace()
         output = self._interface.output
+        logger.debug("Run interface el, output={}".format(output))
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+        if self._joinByKey:
+            dir_join = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items()) if i not in self._joinByKey])
+        elif self._join:
+            dir_join = "join_"
+        if self._joinByKey or self._join:
+            os.makedirs(os.path.join(self.nodedir, dir_join), exist_ok=True)
+            dir_nm_el = os.path.join(dir_join, dir_nm_el)
         os.makedirs(os.path.join(self.nodedir, dir_nm_el), exist_ok=True)
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
+        return res
+
+
+    def run_interface_join_el(self, state_dict, input_list):
+        """ running interface one element for join_interface."""
+        logger.debug("Run join interface el, name={}, state_dict={}".format(
+            self.name, state_dict))
+        self._join_interface.run({"mylist":input_list}) # should have a user specified name
+        output = self._join_interface.output
+        dir_nm_el = "join_" + "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
+        key_red_interf = self._join_interface_input
+        logger.debug("Run join interface el, FileName={}".format(os.path.join(self.nodedir, dir_nm_el, "red_" + key_red_interf + ".txt")))
+        with open(os.path.join(self.nodedir, dir_nm_el, "red_" + key_red_interf + ".txt"), "w") as fout:
+            fout.write(str(output["red_out"]))
+
+
+    def _collecting_input_el(self, ind):
+        state_dict = self.node_states.state_values(ind)
+        inputs_dict = {k: state_dict[k] for k in self._inputs.keys()}
+        # reading extra inputs that come from previous nodes
+        for (from_node, from_socket, to_socket) in self.needed_outputs:
+            dir_nm_el_from = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())
+                                       if i in list(from_node.state_inputs.keys())])
+            file_from = os.path.join(from_node.nodedir, dir_nm_el_from, from_socket+".txt")
+            with open(file_from) as f:
+                inputs_dict["{}-{}".format(self.name, to_socket)] = eval(f.readline())
+        return state_dict, inputs_dict
+
+    def checking_input_el(self, ind):
+        try:
+            self._collecting_input_el(ind)
+            return True
+        except: #TODO specify
+            return False
 
 
     def preparing_node(self):
         # adding directory (should have workflowdir already)
         self.nodedir = os.path.join(self.wfdir, self.fullname)
         os.makedirs(self.nodedir, exist_ok=True)
-
-        self.node_states = state.State(state_inputs=self._state_inputs, mapper=self._state_mapper)
+        self.node_states = state.State(state_inputs=self.state_inputs, mapper=self.state_mapper, node_name=self.name)
 
 
