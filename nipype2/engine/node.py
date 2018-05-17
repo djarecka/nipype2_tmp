@@ -291,7 +291,8 @@ class Node(object):
         state_dict, inputs_dict = self._collecting_input_el(ind)
         logger.debug("Run interface el, name={}, inputs_dict={}, state_dict={}".format(
                                                             self.name, inputs_dict, state_dict))
-        self._interface.run(inputs_dict)
+        res = self._interface.run(inputs_dict)
+        #pdb.set_trace()
         output = self._interface.output
         logger.debug("Run interface el, output={}".format(output))
         dir_nm_el = "_".join(["{}.{}".format(i, j) for i, j in list(state_dict.items())])
@@ -306,6 +307,7 @@ class Node(object):
         for key_out in list(output.keys()):
             with open(os.path.join(self.nodedir, dir_nm_el, key_out+".txt"), "w") as fout:
                 fout.write(str(output[key_out]))
+        return res
 
 
     def run_interface_join_el(self, state_dict, input_list):

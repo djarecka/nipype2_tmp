@@ -11,6 +11,11 @@ import multiprocessing as mp
 #import multiprocess as mp
 import itertools
 
+#from pycon_utils import make_cluster
+from dask.distributed import Client
+
+import concurrent.futures as cf
+
 from .. import config, logging
 logger = logging.getLogger('workflow')
 
@@ -52,3 +57,43 @@ class SerialWorker(Worker):
 
     def close(self):
         pass
+
+
+class ConcurrentFuturesWorker(Worker):
+    def __init__(self, nr_proc=4):
+        self.nr_proc = nr_proc
+        self.pool = cf.ProcessPoolExecutor(self.nr_proc)
+        logger.debug('Initialize ConcurrentFuture')
+
+    def run_el(self, interface, inp):
+        x = self.pool.submit(interface, inp[0], inp[1])
+        #print("X, DONE", x.done())
+        x.add_done_callback(lambda x: print("DONE ", interface, inp, x.done))
+        #print("DIR", x.result())
+
+    def close(self):
+        self.pool.shutdown()
+
+
+class DaskWorker(Worker):
+    def __init__(self):
+        from distributed.deploy.local import LocalCluster
+        logger.debug("Initialize Dask Worker")
+        #self.cluster = LocalCluster()
+        self.client = Client()#self.cluster)
+        print("BOKEH", self.client.scheduler_info()["address"] + ":" + str(self.client.scheduler_info()["services"]["bokeh"]))
+
+
+    def run_el(self, interface, inp):
+        print("DASK, run_el: ", interface, inp)
+        x = self.client.submit(interface, inp[0], inp[1])
+        print("DASK, status: ", x.status)
+        # this important, otherwise dask will not finish the job
+        x.add_done_callback(lambda x: print("DONE ", interface, inp))
+        #print("res", x.result())
+
+
+    def close(self):
+        #self.cluster.close()
+        self.client.close()
+

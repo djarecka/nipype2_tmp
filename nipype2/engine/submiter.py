@@ -9,7 +9,7 @@ import os, pdb, time, glob
 import itertools, collections
 import queue
 
-from .workers import MpWorker, SerialWorker
+from .workers import MpWorker, SerialWorker, DaskWorker, ConcurrentFuturesWorker
 from .state import State
 
 from .. import config, logging
@@ -25,6 +25,10 @@ class Submiter(object):
             self.worker = MpWorker()
         elif self.plugin == "serial":
             self.worker = SerialWorker()
+        elif self.plugin == "dask":
+            self.worker = DaskWorker()
+        elif self.plugin == "cf":
+            self.worker = ConcurrentFuturesWorker()
         else:
             raise Exception("plugin {} not available".format(self.plugin))
         logger.debug('Initialize Submitter, graph: {}'.format(graph))
@@ -39,6 +43,12 @@ class Submiter(object):
             # if its not, its been added to a line
             else:
                 break
+
+            # in case there is no element in the graph that goes to the break
+            # i want to be sure that not calculating the last node again in the next for loop
+            if i_n == len(self.graph) - 1:
+                i_n += 1
+
             # adding task for reducer
             if node._join_interface:
                 # decided to add it as one task, since I have to wait for everyone before  can start it anyway

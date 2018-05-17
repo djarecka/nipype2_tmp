@@ -11,12 +11,16 @@ config.enable_debug_mode()
 logging.update_logging(config)
 
 def funA(a):
+    #pdb.set_trace()
     print("A Before Waiting")
     time.sleep(5)
     print("A After Waiting")
     return a**2
 
 def funB(a):
+    print("B Before Waiting")
+    time.sleep(8)
+    print("B After Waiting")
     return a+2
 
 def funC(c):
@@ -27,14 +31,14 @@ def funD(a, b):
 
 def funE(e1, e2):
     print("E Before Waiting")
-    time.sleep(10)
+    time.sleep(8)
     print("E After Waiting")
     return e1 * e2
 
 def funF():
     return 0
 
-Plugin_List = ["serial", "mp"]
+Plugin_List = ["serial", "mp", "cf", "dask"]
 
 @pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_basic_1(plugin):
@@ -48,7 +52,14 @@ def test_workflow_basic_1(plugin):
 
     wf = Workflow(nodes=[nA, nB], name="workflow_1", workingdir="{}_test_1".format(plugin),
                   plugin=plugin)
+
+    t0 = time.time()
     wf.run()
+    #while not all(x.done() for x in wf.sub.worker.client.futures.values()):
+    #    pdb.set_trace()
+    #    time.sleep(1)
+
+    print("time: {}".format(time.time()-t0))
     #pdb.set_trace()
     assert nA.result["out"][0][0] == {"nA-a":5}
     assert nA.result["out"][0][1] == 25

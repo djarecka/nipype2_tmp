@@ -195,3 +195,5 @@ class Function_Interface(object):
             self.output[self._output_nm[0]] = fun_output
         else:
             raise Exception("output_nm doesnt match length of the function output")
+
+        return fun_output

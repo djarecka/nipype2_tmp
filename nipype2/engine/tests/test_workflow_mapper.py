@@ -37,7 +37,7 @@ def funE(e1, e2):
 def funF():
     return 0
 
-Plugin_List = ["serial", "mp"]
+Plugin_List = ["serial", "mp", "cf", "dask"]
 
 
 @pytest.mark.parametrize("plugin", Plugin_List)

@@ -37,7 +37,10 @@ def fun_sum(mylist):
     return(sum(mylist))
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+Plugin_List = ["serial", "mp", "cf", "dask"]
+
+
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_reducer_interf_1(plugin):
     """graph: A"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
@@ -63,7 +66,7 @@ def test_workflow_reducer_interf_1(plugin):
         assert nA.result_join_interf["red_out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_reducer_interf_1a(plugin):
     """graph: A"""
     nA = Node(inputs={"a": np.array([3, 4, 5])},
@@ -89,7 +92,7 @@ def test_workflow_reducer_interf_1a(plugin):
         assert nA.result_join_interf["red_out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_reducer_interf_2(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
@@ -114,7 +117,7 @@ def test_workflow_reducer_interf_2(plugin):
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_reducer_interf_2a(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
@@ -140,7 +143,7 @@ def test_workflow_reducer_interf_2a(plugin):
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_reducer_interf_2b(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
@@ -165,7 +168,7 @@ def test_workflow_reducer_interf_2b(plugin):
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_reducer_interf_2c(plugin):
     """graph: D"""
     nD = Node(inputs={"d1": np.array([3, 4, 5, 3]), "d2": np.array([10, 20, 30, 40])},
@@ -190,7 +193,7 @@ def test_workflow_reducer_interf_2c(plugin):
         assert nD.result_join_interf["red_out"][i][1] == res[1]
 
 
-@pytest.mark.parametrize("plugin", ["mp", "serial"])
+@pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_reducer_interf_3(plugin):
     """graph: A -> D"""
     nA = Node(inputs={"a": np.array([3, 4, 3])}, mapper="a",

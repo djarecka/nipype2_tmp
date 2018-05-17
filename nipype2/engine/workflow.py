@@ -100,6 +100,6 @@ class Workflow(object):
 
     def run(self):
         self._preparing()
-        sub = Submiter(self.graph_sorted, plugin=self.plugin)
-        sub.run_workflow()
-        sub.close()
+        self.sub = Submiter(self.graph_sorted, plugin=self.plugin)
+        self.sub.run_workflow()
+        self.sub.close()

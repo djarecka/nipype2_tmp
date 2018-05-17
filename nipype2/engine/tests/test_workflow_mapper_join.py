@@ -33,7 +33,7 @@ def funF():
     return 0
 
 
-Plugin_List = ["serial", "mp"]
+Plugin_List = ["serial", "mp", "cf", "dask"]
 
 @pytest.mark.parametrize("plugin", Plugin_List)
 def test_workflow_join_1(plugin):
@@ -168,7 +168,7 @@ def test_workflow_join_3(plugin):
         ({"nD-d1":20}, [({"nA-a":4, "nD-d1":20}, 36)]),
         ({"nD-d1":30}, [({"nA-a":3, "nD-d1": 30}, 39)])
             ]
-    pdb.set_trace()
+    #pdb.set_trace()
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
@@ -189,7 +189,7 @@ def test_workflow_join_4(plugin):
 
     expected = [({"nD-d1":3}, [({"nD-d1":3, "nD-d2":10}, 13), ({"nD-d1":3, "nD-d2":20}, 23)]),
                 ({"nD-d1":4}, [({"nD-d1":4, "nD-d2":10}, 14), ({"nD-d1":4, "nD-d2":20}, 24)])]
-    pdb.set_trace()
+    #pdb.set_trace()
     for i, res in enumerate(expected):
         assert nD.result["out"][i][0] == res[0]
         for j, res_el in enumerate(res[1]):
