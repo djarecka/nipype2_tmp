@@ -1,12 +1,9 @@
-import numpy as np
-import itertools
-from collections import namedtuple
-import pdb
+from collections import OrderedDict
 
 from . import auxiliary as aux
 
 class State(object):
-    def __init__(self, state_inputs, node_name, mapper=None, inp_ord_map = {}):
+    def __init__(self, state_inputs, node_name, mapper=None):
         self.state_inputs = state_inputs
 
         self._mapper = mapper
@@ -32,29 +29,17 @@ class State(object):
         # e.g. [['e', 'd'], ['r', 'd']]
         # shape - list, e.g. [2,3]
         self._input_for_axis, self._shape = aux.converting_axis2input(self.state_inputs,
-                                                                    self._axis_for_input, self._ndim)
+                                                                      self._axis_for_input, self._ndim)
 
         # list of all possible indexes in each dim, will be use to iterate
         # e.g. [[0, 1], [0, 1, 2]]
         self._all_elements = [range(i) for i in self._shape]
-        self._inp_ord_map = inp_ord_map
 
 
     def __getitem__(self, key):
         if type(key) is int:
             key = (key,)
         return self.state_values(key)
-
-    # not used?
-    #@property
-    #def input_for_axis(self):
-    #    return self._input_for_axis
-
-    # not used?
-    #@property
-    #def axis_for_input(self):
-    #    return self._axis_for_input
-
 
     @property
     def all_elements(self):
@@ -77,8 +62,6 @@ class State(object):
 
 
     def state_values(self, ind):
-
-        from collections import OrderedDict
         if len(ind) > self._ndim:
             raise IndexError("too many indices")
 
@@ -92,17 +75,12 @@ class State(object):
             sl_ax = slice(ax[0], ax[-1]+1)
             # taking the indexes related to the axes
             ind_inp = ind[sl_ax]
-            if input in self._inp_ord_map.keys():
-                if len(ind_inp) == 1: #dj i think it has to be 1d
-                    ind_inp = self._inp_ord_map[input][ind_inp[0]]
-                else:
-                    raise Exception("somtehing wrong with connecttions and mapper")
             state_dict[input] = self.state_inputs[input][ind_inp]
 
         # adding values from input that are not used in the mapper
         for input in set(self._input_names) - set(self._input_names_mapper):
             state_dict[input] = self.state_inputs[input]
 
-        #print("In STATE_VALUES", state_dict.items())
-        # returning a named tuple
+        # in py3.7 we can skip OrderedDict
+        # returning a named tuple?
         return OrderedDict(sorted(state_dict.items(), key=lambda t: t[0]))
