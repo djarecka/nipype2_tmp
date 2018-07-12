@@ -4,40 +4,44 @@ from .. import config, logging
 logger = logging.getLogger('workflow')
 
 
-def ordering(el, i, current_sign=None):
+# Function to change user provided mapper to "reverse polish notation" used in State
+def mapper2rpn(mapper):
+    """ Functions that translate mapper to "reverse polish notation."""
+    global output_mapper
+    output_mapper = []
+    _ordering(mapper, i=0)
+    return output_mapper
+
+
+def _ordering(el, i, current_sign=None):
+    """ Used in the mapper2rpn to get a proper order of fields and signs. """
     global output_mapper
     if type(el) is tuple:
-        iterate_list(el, ".")
+        _iterate_list(el, ".")
     elif type(el) is list:
-        iterate_list(el, "*")
+        _iterate_list(el, "*")
     elif type(el) is str:
         output_mapper.append(el)
     else:
-        raise Exception("WRONG input")
+        raise Exception("mapper has to be a string, a tuple or a list")
     
     if i > 0:
         output_mapper.append(current_sign)
 
 
-def iterate_list(element,  sign):
+def _iterate_list(element, sign):
+    """ Used in the mapper2rpn to get recursion. """
     for i, el in enumerate(element):
-        ordering(el, i, current_sign=sign)
+        _ordering(el, i, current_sign=sign)
 
 
-def mapper2rpn(mapper):
-    global output_mapper
-    output_mapper = []
-    
-    ordering(mapper, i=0)
-    
-    #print("mapper", output_mapper)
-    return output_mapper
-
+# functions used in State to know which element should be used for a specific axis
 
 def mapping_axis(state_inputs, mapper_rpn):
+    """Having inputs and mapper (in rpn notation), functions returns the axes of output for every input."""
     axis_for_input = {}
     stack = []
-    current_axis = None #dj not sure if emty list will work
+    current_axis = None
     current_shape = None
 
     for el in mapper_rpn:
@@ -71,27 +75,27 @@ def mapping_axis(state_inputs, mapper_rpn):
             right = stack.pop()
             left = stack.pop()
             if left == "OUT":
-                axis_for_input[right] = [i + 1 + current_axis[-1] for i 
-                                              in range(state_inputs[right].ndim)]
+                axis_for_input[right] = [i + 1 + current_axis[-1]
+                                         for i in range(state_inputs[right].ndim)]
                 current_axis = current_axis + axis_for_input[right]
                 current_shape = tuple([i for i in current_shape + state_inputs[right].shape])
             elif right == "OUT":
                 for key in axis_for_input:
-                    axis_for_input[key] = [i + state_inputs[left].ndim for i
-                                           in axis_for_input[key]]
+                    axis_for_input[key] = [i + state_inputs[left].ndim
+                                           for i in axis_for_input[key]]
 
-                axis_for_input[left] = [i-len(current_shape) + current_axis[-1] +1 for i 
-                                        in range(state_inputs[left].ndim)]
-                current_axis = current_axis + [i + 1 + current_axis[-1] for i 
-                                               in range(state_inputs[left].ndim)]
+                axis_for_input[left] = [i - len(current_shape) + current_axis[-1] + 1
+                                        for i in range(state_inputs[left].ndim)]
+                current_axis = current_axis + [i + 1 + current_axis[-1]
+                                               for i in range(state_inputs[left].ndim)]
                 current_shape = tuple([i for i in state_inputs[left].shape + current_shape])
             else:
                 axis_for_input[left] = list(range(state_inputs[left].ndim))
-                axis_for_input[right] = [i+state_inputs[left].ndim for i 
-                                              in range(state_inputs[right].ndim)]
+                axis_for_input[right] = [i + state_inputs[left].ndim
+                                         for i in range(state_inputs[right].ndim)]
                 current_axis = axis_for_input[left] + axis_for_input[right]
                 current_shape = tuple([i for i in 
-                                       state_inputs[left].shape+state_inputs[right].shape])
+                                       state_inputs[left].shape + state_inputs[right].shape])
             stack.append("OUT")
 
         else:
@@ -113,6 +117,7 @@ def mapping_axis(state_inputs, mapper_rpn):
 
 
 def converting_axis2input(state_inputs, axis_for_input, ndim):
+    """ Having axes for all the input fields, the function returns fields for each axis. """
     input_for_axis = []
     shape = []
     for i in range(ndim):
@@ -127,7 +132,23 @@ def converting_axis2input(state_inputs, axis_for_input, ndim):
     return input_for_axis, shape
 
 
-def add_name(mlist, name):
+# used in the Node to change names in a mapper
+
+def change_mapper(mapper, name):
+    """changing names of mapper: adding names of the node"""
+    if isinstance(mapper, str):
+        if "-" in mapper:
+            return mapper
+        else:
+            return "{}-{}".format(name, mapper)
+    elif isinstance(mapper, list):
+        return _add_name(mapper, name)
+    elif isinstance(mapper, tuple):
+        mapper_l = list(mapper)
+        return tuple(_add_name(mapper_l, name))
+
+
+def _add_name(mlist, name):
     for i, elem in enumerate(mlist):
         if isinstance(elem, str):
             if "-" in elem:
@@ -135,30 +156,18 @@ def add_name(mlist, name):
             else:
                 mlist[i] = "{}-{}".format(name, mlist[i])
         elif isinstance(elem, list):
-            mlist[i] = add_name(elem, name)
+            mlist[i] = _add_name(elem, name)
         elif isinstance(elem, tuple):
             mlist[i] = list(elem)
-            mlist[i] = add_name(mlist[i], name)
+            mlist[i] = _add_name(mlist[i], name)
             mlist[i] = tuple(mlist[i])
     return mlist
 
 
-def change_mapper(mapper, name):
-    if isinstance(mapper, str):
-        if "-" in mapper:
-            return mapper
-        else:
-            return "{}-{}".format(name, mapper)
-    elif isinstance(mapper, list):
-        add_name(mapper, name)
-        return mapper
-    elif isinstance(mapper, tuple):
-        mapper_l = list(mapper)
-        add_name(mapper_l, name)
-        return tuple(mapper_l)
-
+#Function interface
 
 class Function_Interface(object):
+    """ A new function interface """
     def __init__(self, function, output_nm, input_map=None):
         self.function = function
         if type(output_nm) is list:
@@ -174,11 +183,9 @@ class Function_Interface(object):
 
 
     def run(self, input):
-        #pdb.set_trace()
         self.output = {}
         if self.input_map:
             for (key_fun, key_inp) in self.input_map.items():
-                #pdb.set_trace()
                 try:
                     input[key_fun] = input.pop(key_inp)
                 except KeyError:
