@@ -18,7 +18,6 @@ class State(object):
             self._input_names_mapper = []
         # not all input field have to be use in the mapper, can be an extra scalar
         self._input_names = list(self.state_inputs.keys())
-        # will use alphabetic order
 
         # dictionary[key=input names] = list of axes related to
         # e.g. {'r': [1], 'e': [0], 'd': [0, 1]}
@@ -73,7 +72,7 @@ class State(object):
         for input, ax in self._axis_for_input.items():
             # checking which axes are important for the input
             sl_ax = slice(ax[0], ax[-1]+1)
-            # taking the indexes related to the axes
+            # taking the indexes for the axes
             ind_inp = ind[sl_ax]
             state_dict[input] = self.state_inputs[input][ind_inp]
 
